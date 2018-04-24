@@ -319,6 +319,7 @@ void parent_connect(server_rsp_t* response, int listen_socket, bool new_thread){
 
 /********************************** MAIN *************************************/
 
+
 int main(int argc, char** argv) {
   /******************************** SET UP ***********************************/
   /******************** SET UP PART ONE: UI AND GLOBALS  *********************/
@@ -351,14 +352,6 @@ int main(int argc, char** argv) {
   clientID = response->clientID;
   servermsg->clientID = clientID;
   servermsg->parent_port = response->parent_port;
-
-  /*********************** CONNECT TO PARENT *********************************/
-  if (response->parent_port != -1) {
-    // connect to parent and spin off a thread to listen and relay messages from
-    // them
-    parent_connect(response, listen_socket, true);
-    parent_port = response->parent_port;
-  } // if there are no previous clients, do nothing
 
   /********************** READ AND RELAY MESSAGES  ***************************/
   while(continue_flag) {

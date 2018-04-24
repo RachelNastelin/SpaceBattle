@@ -12,6 +12,10 @@
 #include <time.h>
 
 #define SERVER_PORT 6663
+#define LEFT 0;
+#define RIGHT 1;
+#define UP 2;
+#define DOWN 3;
 
 // client join message
 typedef struct server_msg {
@@ -34,6 +38,14 @@ typedef struct client_list {
   int port_num;
   struct client_list * next;
 } client_list_t;
+
+typedef struct update_msg{
+  int clientID; // to differentiate between players
+  int player_pos[][];
+  bool quitting; // 0 = not quitting, 1 = quitting
+  bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
+  int direction; // LEFT, RIGHT, UP, or DOWN
+} update_msg_t;
 
 // GLOBAL CLIENT LIST
 client_list_t * clients;

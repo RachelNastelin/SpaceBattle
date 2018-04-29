@@ -1,3 +1,6 @@
 We have most of the things we think we need to connect with the server, but
 we're not done looking through everything in main for things we need to add.
 When we left off, we had just compiled for the first time. There's a lot to fix.
+
+Since then, Rachel has worked on fixing some compiler errors by adding
+listen_relay_func, but there are still many compiler errors. 

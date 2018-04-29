@@ -34,16 +34,20 @@ typedef struct server_rsp {
 
 char * server_name;
 int connections[2]; // Each index has a socket number
-int num_clients;
+int num_connections;
 int global_listen_port;
 int global_clientID;
 bool continue_flag; // True when the client has not quit
 pthread_mutex_t connections_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/*********************** FUNCTION SIGNATURES *********************************/
+void listen_relay_func (void * socket_num);
+
+
 /***************************** THREAD FUNCTIONS ******************************/
 
 // thread to accept connections
-void * accept_connections_func (void * listen_socket_num) {
+void accept_connections_func (void * listen_socket_num) {
   int socket = *(int*)listen_socket_num;
   free(listen_socket_num);
 
@@ -56,12 +60,18 @@ void * accept_connections_func (void * listen_socket_num) {
                                &client_addr_len);
     pthread_mutex_lock(&connections_lock);
     // add the new connection to our list of connections
+    connections[num_connections-1] = client_socket;
+    num_connections++;
+
+    /*
     connect_list_t* new_child = (connect_list_t*)malloc(sizeof(connect_list_t));
     new_child->socket = client_socket;
     new_child->next = connections;
     connections = new_child;
+    */
+    
     pthread_mutex_unlock(&connections_lock);
-
+    
     // create a listen and relay thread for the new connection
     pthread_t listen_thread;
     int * socket_num = (int*)malloc(sizeof(int));
@@ -73,6 +83,34 @@ void * accept_connections_func (void * listen_socket_num) {
     } // if  
   } // while
 } // accept_connections_func
+
+// thread to listen for and relay messages
+void listen_relay_func (void * socket_num) {
+  int socket = *(int*)socket_num;
+  free(socket_num);
+
+  while (continue_flag) {
+    message_t message;
+    // try to read a message
+    if (read(socket, &message, sizeof(message_t)) <= 0) {
+      // something went wrong, exit
+      remove_connection(socket);
+    } else {
+      ui_add_message(message.username, message.text);
+      pthread_mutex_lock(&list_lock);
+      int ** current = connections;
+      // relay the message to all connections
+      while (current != NULL) {
+        if () {
+          write(current->socket, &message, sizeof(message_t));
+        }
+        current = current->next;
+      } // while
+      pthread_mutex_unlock(&list_lock);
+    }
+  } // while true
+  close(socket);
+} // listen_relay_func
 
 
 /*************************** HELPER FUNCTIONS ********************************/
@@ -160,7 +198,7 @@ int main(int argc, char**argv){
   continue_flag = true;
   update_msg_t * msg_to_server = (update_msg_t*)malloc(sizeof(update_msg_t));
   global_clientID = -1;
-  global_listen_port = 
+  //global_listen_port = 
   
   // set up connections array
   for(int i = 0; i < 3; i++){

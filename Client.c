@@ -72,10 +72,10 @@ void * accept_connections_func (void * listen_socket_num) {
     num_connections++;
 
     /*
-    connect_list_t* new_child = (connect_list_t*)malloc(sizeof(connect_list_t));
-    new_child->socket = client_socket;
-    new_child->next = connections;
-    connections = new_child;
+      connect_list_t* new_child = (connect_list_t*)malloc(sizeof(connect_list_t));
+      new_child->socket = client_socket;
+      new_child->next = connections;
+      connections = new_child;
     */
     
     pthread_mutex_unlock(&connections_lock);
@@ -207,12 +207,11 @@ int socket_setup (int port, struct sockaddr_in * addr) {
 
 /********************************** MAIN *************************************/
 int main(int argc, char**argv){
-/******************** SET UP PART ONE: UI AND GLOBALS  *********************/
+  /******************** SET UP PART ONE: UI AND GLOBALS  *********************/
   server_name = argv[1];
   continue_flag = true;
-  update_msg_t * msg_to_server = (update_msg_t*)malloc(sizeof(update_msg_t));
-  global_clientID = -1;
-  //global_listen_port = 
+  server_rsp_t * msg_to_server = (server_rsp_t*)malloc(sizeof(server_rsp_t));
+  //global_listen_port =
   
   // set up connections array
   for(int i = 0; i < 3; i++){
@@ -230,7 +229,13 @@ int main(int argc, char**argv){
   msg_to_server->clientID = global_clientID;
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
 
-  printf("Connected to server!\n");
+  server_rsp_t * response = server_connect(msg_to_server);
+
+  // edit our globals to take into account information gotten from the server
+  global_clientID = response->clientID;
+  msg_to_server->clientID = global_clientID;
   
-  
+  free(msg_to_server);
+  free(response);
+  close(listen_socket);
 } // main

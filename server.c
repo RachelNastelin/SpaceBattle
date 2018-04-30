@@ -95,6 +95,7 @@ int main() {
     socklen_t client_addr_length = sizeof(struct sockaddr_in);
     client_socket = accept(s, (struct sockaddr*)&client_addr,
                            &client_addr_length);
+   
     if(client_socket == -1) {
       perror("accept failed");
       exit(2);
@@ -113,37 +114,37 @@ int main() {
     //set up the response to the client
     response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
 
-      // Add the new client to our list of clients
-      client_list_t* new_client = (client_list_t*)malloc(sizeof(client_list_t));
-      new_client->clientID = client_count;
-      strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
-      new_client->port_num = message.listen_port;
-      new_client->next = clients;
-      clients = new_client;
-      client_count++;
+    // Add the new client to our list of clients
+    client_list_t* new_client = (client_list_t*)malloc(sizeof(client_list_t));
+    new_client->clientID = client_count;
+    strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
+    new_client->port_num = message.listen_port;
+    new_client->next = clients;
+    clients = new_client;
+    client_count++;
 
-      // if the client's ID is -2, then the client is quitting 
-      if (message.clientID == -2) {
-        printf("Client %d is exiting.\n", remove_client(message.listen_port));
-      } else {
-        printf("\nClient %d connected from %s, on port %d\n",
-               message.clientID, ipstr, ntohs(message.listen_port));
-      } // else
-    }
+    // if the client's ID is -2, then the client is quitting 
+    if (message.clientID == -2) {
+      printf("Client %d is exiting.\n", remove_client(message.listen_port));
+    } else {
+      printf("\nClient %d connected from %s, on port %d\n",
+             message.clientID, ipstr, ntohs(message.listen_port));
+    } // else
+  } // while
 
-    // respond to the client
-    write(client_socket, response, sizeof(server_rsp_t));
-    // close the socket
-    close(client_socket);
+  // respond to the client
+  write(client_socket, response, sizeof(server_rsp_t));
+  // close the socket
+  close(client_socket);
 
-    // print the current client list
-    printf("\nCURRENT CLIENT LIST:\n");
-    client_list_t* current = clients;
-    while (current != NULL) {
-      printf("Client %d, at %s, on port %d.\n", current->clientID, current->ip,
-             current->port_num);
-      current = current->next;
-    }
+  // print the current client list
+  printf("\nCURRENT CLIENT LIST:\n");
+  client_list_t* current = clients;
+  while (current != NULL) {
+    printf("Client %d, at %s, on port %d.\n", current->clientID, current->ip,
+           current->port_num);
+    current = current->next;
+  }
   
   close(s);
 }

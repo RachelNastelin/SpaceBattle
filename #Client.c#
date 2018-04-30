@@ -230,7 +230,7 @@ int main(int argc, char**argv){
   msg_to_server->clientID = global_clientID;
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
 
-  printf("Connected to server!\n");
+ 
   
   
 } // main

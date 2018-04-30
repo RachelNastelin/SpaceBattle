@@ -15,13 +15,34 @@
 
 /********************************* STRUCTS **********************************/
 
-typedef struct update_msg{
+typedef struct msg_to_server{
   int clientID; // to differentiate between players
   int listen_port; 
   bool quitting; // 0 = not quitting, 1 = quitting
   bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
   int direction; // LEFT, RIGHT, UP, or DOWN
-} update_msg_t;
+} msg_to_server_t;
+
+typedef struct cannonball {
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} cannonball_t;
+
+typedef struct spaceship {
+  int clientID;
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} spaceship_t;
+
+typdef struct msg_to_client {
+  int clientID;
+  cannonball_t* cannonballs;
+  spaceship_t* spaceships;
+} msg_to_client_t;
 
 // server response
 typedef struct server_rsp {

@@ -12,17 +12,14 @@
 #include <time.h>
 
 #define SERVER_PORT 6663
-
+// directions, used for user input
+#define UP 1
+#define DOWN -1
+#define RIGHT 2
+#define LEFT -2
 /********************************* STRUCTS **********************************/
 
-typedef struct msg_to_server{
-  int clientID; // to differentiate between players
-  int listen_port; 
-  bool quitting; // 0 = not quitting, 1 = quitting
-  bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
-  int direction; // LEFT, RIGHT, UP, or DOWN
-} msg_to_server_t;
-
+// struct for each cannonball
 typedef struct cannonball {
   float x_position;
   float y_position;
@@ -30,33 +27,43 @@ typedef struct cannonball {
   float y_velocity;
 } cannonball_t;
 
+// struct for each player's spaceship
 typedef struct spaceship {
-  int clientID;
+  int clientID; // to keep track of whose spaceship is whose
   float x_position;
   float y_position;
   float x_velocity;
   float y_velocity;
 } spaceship_t;
 
-typdef struct msg_to_client {
-  int clientID;
-  cannonball_t* cannonballs;
-  spaceship_t* spaceships;
-} msg_to_client_t;
+// information sent from client to server
+typedef struct msg_to_server{
+  int clientID; // to differentiate between players
+  int listen_port;
+  bool died; // true if the spaceship intersected with a cannonball or star
+  bool quitting; // 0 = not quitting, 1 = quitting
+  bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
+  int direction; // LEFT, RIGHT, UP, or DOWN
+  bool continue_flag; // when false, stops all threads on client side
+} msg_to_server_t;
 
-// server response
+// information sent from server to client
 typedef struct server_rsp {
   int clientID;
   int listen_port;
+  cannonball_t * cannonballs; // array used for determining spaceship death
+  bool continue_flag; // when false, stops all threads on client side 
+  // TODO: the board, however we're storing it
   /* Add things */
 } server_rsp_t;
 
-// client storage for the directory server's internal list of clients
+// client storage for the server's internal list of clients.
+// each client_list variable represents one client in the list.
 typedef struct client_list {
   int clientID;
-  char ip[INET_ADDRSTRLEN];
-  int port_num;
-  struct client_list * next;
+  char ip[INET_ADDRSTRLEN]; // IP address of client
+  int port_num; // port of client
+  struct client_list * next; 
 } client_list_t;
 
 /****************************** GLOBALS **************************************/
@@ -65,14 +72,48 @@ typedef struct client_list {
 client_list_t * clients;
 int client_count;
 
-/*********************** FUNCTIONS *******************************************/
 
-// remove a client from the list, return the ID of the removed client
-// (or -1 if the client is not in the list)
-int remove_client (int port) {
-  /* Shut down everything */
-  return -1;
+/***************************** FUNCTIONS **************************************/
+
+/************************* END GAME FUNCTIONS *********************************/
+
+// called when a client cannot be communicated with.
+void remove_client (int port) {
+  // TODO: change this to whatever print function we're using for the UI
+  printf("Something went wrong with your opponent's internet connection.\n");
+  server_rsp_t quit_msg;
+  for(int i = 0; i < 2; i++){
+    quit_msg.clientID = clients[i].clientID;
+    quit_msg.continue_flag = false;
+    quit_msg.listen_port = clients[i].port_num;
+  }
+  free(clients);
 }
+
+// called when a client quits before the game finishes
+void quit_client (int port){
+  // TODO: change this to whatever print function we're using for the UI
+  printf("One player has quit the game.\n");
+  server_rsp_t quit_msg;
+  for(int i = 0; i < 2; i++){
+    quit_msg.clientID = clients[i].clientID;
+    quit_msg.continue_flag = false;
+    quit_msg.listen_port = clients[i].port_num;
+  }
+  free(clients);
+} // quit_client
+
+// called when the game ends, which is when at least one player has died
+void end_game (){
+  // TODO: announce winner
+  server_rsp_t quit_msg;
+  for(int i = 0; i < 2; i++){
+    quit_msg.clientID = clients[i].clientID;
+    quit_msg.continue_flag = false;
+    quit_msg.listen_port = clients[i].port_num;
+  }
+  free(clients);
+} // end_game
 
 /***************************** MAIN *******************************************/
 
@@ -123,8 +164,11 @@ int main() {
     }
     
     // read a message from the client
-    server_rsp_t message;
-    read(client_socket, &message, sizeof(server_rsp_t));
+    msg_to_server_t message;
+    if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){
+      // if the server couldn't read from the client, exit the game
+      remove_client(message.listen_port);
+    }
 
     printf("\n/-----------------------------------------------------------/\n");
 
@@ -143,16 +187,20 @@ int main() {
     new_client->next = clients;
     clients = new_client;
     client_count++;
-
-    // if the client's ID is -2, then the client is quitting 
-    if (message.clientID == -2) {
-      printf("Client %d is exiting.\n", remove_client(message.listen_port));
+    
+    // end game if necessary
+    if (message.continue_flag == false) {
+      quit_client(message.listen_port);
+    } else if(message.died == true){
+      end_game();
     } else {
+      // if they aren't trying to quit, connect them
       printf("\nClient %d connected from %s, on port %d\n",
              message.clientID, ipstr, ntohs(message.listen_port));
     } // else
   } // while
 
+ 
   // respond to the client
   write(client_socket, response, sizeof(server_rsp_t));
   // close the socket

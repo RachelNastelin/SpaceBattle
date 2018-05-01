@@ -13,28 +13,54 @@
 
 #define SERVER_PORT 6663
 #define NOT_IN_USE -1 // sockets not in use have this value
-
+// directions, used for user input
+#define UP 1
+#define DOWN -1
+#define RIGHT 2
+#define LEFT -2
 /********************************* STRUCTS **********************************/
 
-typedef struct update_msg{
+// struct for each cannonball
+typedef struct cannonball {
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} cannonball_t;
+
+// struct for each player's spaceship
+typedef struct spaceship {
+  int clientID; // to keep track of whose spaceship is whose
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} spaceship_t;
+
+// information sent from client to server
+typedef struct msg_to_server{
   int clientID; // to differentiate between players
-  int listen_port; 
+  int listen_port;
+  bool died; // true if the spaceship intersected with a cannonball or star
   bool quitting; // 0 = not quitting, 1 = quitting
   bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
   int direction; // LEFT, RIGHT, UP, or DOWN
-} update_msg_t;
+  bool continue_flag; // when false, stops all threads on client side 
+} msg_to_server_t;
+
+// information sent from server to client
+typedef struct server_rsp {
+  int clientID;
+  int listen_port;
+  cannonball_t * cannonballs; // array used for determining spaceship death
+  bool continue_flag; // when false, stops all threads on client side 
+  // TODO: the board, however we're storing it
+  /* Add things */
+} server_rsp_t;
 
 typedef struct user_input {
   int direction; // LEFT, RIGHT, UP, or DOWN
 } user_input_t;
-
-// server response
-typedef struct server_rsp {
-  int clientID;
-  int listen_port;
-  /* Add things */
-} server_rsp_t;
-
 
 /****************************** GLOBALS **************************************/
 
@@ -43,7 +69,7 @@ int connections[2]; // Each index has a socket number
 int num_connections;
 int global_listen_port;
 int global_clientID;
-bool continue_flag; // True when the client has not quit
+bool global_continue_flag; // True when the client has not quit
 pthread_mutex_t connections_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*********************** FUNCTION SIGNATURES *********************************/
@@ -60,7 +86,7 @@ void * accept_connections_func (void * listen_socket_num) {
   free(listen_socket_num);
 
   // Repeatedly accept connections
-  while(continue_flag) {
+  while(global_continue_flag) {
     // Accept a client connection
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(struct sockaddr_in);
@@ -70,14 +96,6 @@ void * accept_connections_func (void * listen_socket_num) {
     // add the new connection to our list of connections
     connections[num_connections-1] = client_socket;
     num_connections++;
-
-    /*
-      connect_list_t* new_child = (connect_list_t*)malloc(sizeof(connect_list_t));
-      new_child->socket = client_socket;
-      new_child->next = connections;
-      connections = new_child;
-    */
-    
     pthread_mutex_unlock(&connections_lock);
     
     // create a listen and relay thread for the new connection
@@ -98,13 +116,16 @@ void * listen_relay_func (void * socket_num) {
   int socket = *(int*)socket_num;
   free(socket_num);
 
-  while (continue_flag) {
+  while (global_continue_flag) {
     server_rsp_t message;
     // try to read a message
-    if (read(socket, &message, sizeof(update_msg_t)) <= 0) {
+    if (read(socket, &message, sizeof(msg_to_server_t)) <= 0) {
       // something went wrong, exit
       remove_connection(socket);
     } else {
+      // the information was sent successfully
+      global_continue_flag = message.continue_flag; // stops threads on client side
+      
       // update your game board
       // do some stuff
     }
@@ -190,6 +211,8 @@ server_rsp_t * server_connect(server_rsp_t * client_join) {
   return response;
 } // server_connect
 
+
+
 // function to set up a socket listening to a given port
 int socket_setup (int port, struct sockaddr_in * addr) {
   int s = socket(AF_INET, SOCK_STREAM, 0);
@@ -209,7 +232,7 @@ int socket_setup (int port, struct sockaddr_in * addr) {
 int main(int argc, char**argv){
   /******************** SET UP PART ONE: UI AND GLOBALS  *********************/
   server_name = argv[1];
-  continue_flag = true;
+  global_continue_flag = true;
   server_rsp_t * msg_to_server = (server_rsp_t*)malloc(sizeof(server_rsp_t));
   //global_listen_port =
   

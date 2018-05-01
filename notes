@@ -3,4 +3,9 @@ Rachel: Server, communicating with clients
 Caelin: Client, user input, UI stuff(?)
 
 
-As of right now, the server connects to the clients but doesn't send information back and forth. 
+As of right now, the server connects to the clients but doesn't send information
+back and forth. 
+
+According to our project proposal, the server redraws the board, not the
+clients. How are we doing that? How do we pass a board between the server and
+clients? 

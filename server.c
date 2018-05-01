@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include <time.h>
 
+#include "board.h"
+
 #define SERVER_PORT 6663
 // directions, used for user input
 #define UP 1

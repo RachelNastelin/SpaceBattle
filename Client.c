@@ -11,6 +11,8 @@
 #include <netdb.h>
 #include <stdbool.h>
 
+#include "board.h"
+
 #define SERVER_PORT 6663
 #define NOT_IN_USE -1 // sockets not in use have this value
 // directions, used for user input

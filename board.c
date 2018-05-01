@@ -7,6 +7,7 @@
 #include <SDL.h>
 
 #define CANNONBALL_RADIUS 5
+#define SHIP_RADIUS 10
 
 SDL_Window* sdlwindow;
 SDL_Renderer* sdlrenderer;
@@ -114,8 +115,8 @@ void gui_draw_circle(int center_x, int center_y, float radius, color_t color) {
 //Drawing ship (it's a square)
 void gui_draw_ship(int center_x, int center_y){
   // Based on method from http://groups.csail.mit.edu/graphics/classes/6.837/F98/Lecture6/circle.html
-  for(int x=0; x<=radius; x++) {
-    for(int y=0; y<=radius; y++) {
+  for(int x=0; x<=SHIP_RADIUS; x++) {
+    for(int y=0; y<=SHIP_RADIUS; y++) {
       gui_set_pixel(center_x + x, center_y + y, color);
       gui_set_pixel(center_x + x, center_y - y, color);
       gui_set_pixel(center_x - x, center_y + y, color);

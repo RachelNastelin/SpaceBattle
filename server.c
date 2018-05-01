@@ -11,7 +11,9 @@
 #include <netdb.h>
 #include <time.h>
 
-#define SERVER_PORT 6663
+#include "board.h"
+
+#define SERVER_PORT 6664
 // directions, used for user input
 #define UP 1
 #define DOWN -1
@@ -52,7 +54,8 @@ typedef struct server_rsp {
   int clientID;
   int listen_port;
   cannonball_t * cannonballs; // array used for determining spaceship death
-  bool continue_flag; // when false, stops all threads on client side 
+  bool continue_flag; // when false, stops all threads on client side
+  
   // TODO: the board, however we're storing it
   /* Add things */
 } server_rsp_t;
@@ -63,6 +66,7 @@ typedef struct client_list {
   int clientID;
   char ip[INET_ADDRSTRLEN]; // IP address of client
   int port_num; // port of client
+  int socket;
   struct client_list * next; 
 } client_list_t;
 
@@ -76,18 +80,23 @@ int client_count;
 /***************************** FUNCTIONS **************************************/
 
 /************************* END GAME FUNCTIONS *********************************/
+void stop_game(){
+  server_rsp_t quit_msg;
+  for(int i = 0; i < 2; i++){
+    quit_msg.clientID = clients[i].clientID;
+    quit_msg.continue_flag = false; // stops client threads
+    quit_msg.listen_port = clients[i].port_num;
+    // send quit_msg
+    write(clients[i].socket, &quit_msg, sizeof(server_rsp_t));
+  }
+  free(clients);
+}
 
 // called when a client cannot be communicated with.
 void remove_client (int port) {
   // TODO: change this to whatever print function we're using for the UI
-  printf("Something went wrong with your opponent's internet connection.\n");
-  server_rsp_t quit_msg;
-  for(int i = 0; i < 2; i++){
-    quit_msg.clientID = clients[i].clientID;
-    quit_msg.continue_flag = false;
-    quit_msg.listen_port = clients[i].port_num;
-  }
-  free(clients);
+  printf("Your opponent can't connect to the server.\n");
+  stop_game();
 }
 
 // called when a client quits before the game finishes
@@ -95,24 +104,14 @@ void quit_client (int port){
   // TODO: change this to whatever print function we're using for the UI
   printf("One player has quit the game.\n");
   server_rsp_t quit_msg;
-  for(int i = 0; i < 2; i++){
-    quit_msg.clientID = clients[i].clientID;
-    quit_msg.continue_flag = false;
-    quit_msg.listen_port = clients[i].port_num;
-  }
-  free(clients);
+  stop_game();
 } // quit_client
 
 // called when the game ends, which is when at least one player has died
 void end_game (){
   // TODO: announce winner
   server_rsp_t quit_msg;
-  for(int i = 0; i < 2; i++){
-    quit_msg.clientID = clients[i].clientID;
-    quit_msg.continue_flag = false;
-    quit_msg.listen_port = clients[i].port_num;
-  }
-  free(clients);
+  stop_game();
 } // end_game
 
 /***************************** MAIN *******************************************/
@@ -146,9 +145,10 @@ int main() {
 
   client_count = 0;
   // set up the list of connected clients
-  clients = NULL;
+  clients = (client_list_t*)malloc(sizeof(client_list_t));
   int client_socket;
   server_rsp_t * response;
+
   
   // Repeatedly accept connections
   while(client_count <= 2) {
@@ -157,12 +157,12 @@ int main() {
     socklen_t client_addr_length = sizeof(struct sockaddr_in);
     client_socket = accept(s, (struct sockaddr*)&client_addr,
                            &client_addr_length);
-   
+    
     if(client_socket == -1) {
       perror("accept failed");
       exit(2);
     }
-    
+    clients[client_count - 1].socket = client_socket;
     // read a message from the client
     msg_to_server_t message;
     if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){

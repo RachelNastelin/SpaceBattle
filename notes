@@ -1,11 +1,20 @@
+======== Breakdown of Work =======
 Will: Driver, computations for server
 Rachel: Server, communicating with clients
 Caelin: Client, user input, UI stuff(?)
 
+========= Current Status ==========
+Driver:
+Server: As of right now, the server connects to the clients and sends
+        information back and forth.
+Client:
 
-As of right now, the server connects to the clients but doesn't send information
-back and forth. 
 
-According to our project proposal, the server redraws the board, not the
-clients. How are we doing that? How do we pass a board between the server and
-clients? 
+============ Questions =============
+
+
+===== Change before turning in =====
+Driver:
+Server: Get rid of print statement when a new client connects because the
+        clientIDs are wrong and can't be fixed
+Client:

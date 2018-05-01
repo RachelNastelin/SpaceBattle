@@ -11,7 +11,9 @@
 #include <netdb.h>
 #include <stdbool.h>
 
-#define SERVER_PORT 6663
+#include "board.h"
+
+#define SERVER_PORT 6664
 #define NOT_IN_USE -1 // sockets not in use have this value
 // directions, used for user input
 #define UP 1
@@ -182,7 +184,7 @@ int setup_listen() {
 } // setup_listen
 
 // function to initialize server connection and receive a parent
-server_rsp_t * server_connect(server_rsp_t * client_join) {
+server_rsp_t * server_connect(msg_to_server_t * client_join) {
   // set up socket to connect to server
   struct sockaddr_in addr;
   int s = socket_setup(SERVER_PORT, &addr);
@@ -221,7 +223,6 @@ int socket_setup (int port, struct sockaddr_in * addr) {
     exit(2);
   }
   // Set up addresses
-  // MAKE SURE YOU AREN'T CONNECTING TO A PARENT HERE
   addr->sin_addr.s_addr = INADDR_ANY;
   addr->sin_family = AF_INET;
   addr->sin_port = htons(port);
@@ -233,7 +234,7 @@ int main(int argc, char**argv){
   /******************** SET UP PART ONE: UI AND GLOBALS  *********************/
   server_name = argv[1];
   global_continue_flag = true;
-  server_rsp_t * msg_to_server = (server_rsp_t*)malloc(sizeof(server_rsp_t));
+  msg_to_server_t * msg_to_server = (msg_to_server_t*)malloc(sizeof(msg_to_server_t));
   //global_listen_port =
   
   // set up connections array
@@ -251,13 +252,12 @@ int main(int argc, char**argv){
   /************************* CONNECT TO SERVER ******************************/
   msg_to_server->clientID = global_clientID;
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
-
+  msg_to_server->continue_flag = global_continue_flag;
   server_rsp_t * response = server_connect(msg_to_server);
 
   // edit our globals to take into account information gotten from the server
   global_clientID = response->clientID;
   msg_to_server->clientID = global_clientID;
-  
   free(msg_to_server);
   free(response);
   close(listen_socket);

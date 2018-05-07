@@ -75,6 +75,8 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
 __host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost);
 __host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
 __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
+bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star);
+bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius);
 
 
 
@@ -271,26 +273,6 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars,
   }
 }
 
-// check_for_collision helper
-bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius){
-  if(ship_pos == obstacle_pos){return true;}
-  if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
-    if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){
-      // ship's left bound is on the left of the obstacle's right bound
-      return true;
-    }
-  } // ship on right
-
-  if(ship_pos < obstacle_pos){ // the ship is on the left of the obstacle
-    if((ship_pos + STARSHIP_RADIUS) >= (obstacle_pos - obstacle_radius)){
-      // ship's right bound is on the right of the obstacle's left bound
-      return true;
-    }
-  } // ship on left
-  return false;
-} // within_bounds
-
-
 // To check for a collision with a star, make cannonball NULL
 // To check for a collision with a spaceship, make star NULL
 bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star){
@@ -317,6 +299,26 @@ bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_
       } // check y
     } //check x
   } // cannonball case
+}
+
+// check_for_collision helper
+bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius){
+  if(ship_pos == obstacle_pos){return true;}
+  if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
+    if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){
+      // ship's left bound is on the left of the obstacle's right bound
+      return true;
+    }
+  } // ship on right
+
+  if(ship_pos < obstacle_pos){ // the ship is on the left of the obstacle
+    if((ship_pos + STARSHIP_RADIUS) >= (obstacle_pos - obstacle_radius)){
+      // ship's right bound is on the right of the obstacle's left bound
+      return true;
+    }
+  } // ship on left
+  return false;
+} // within_bounds
 
 
 /*

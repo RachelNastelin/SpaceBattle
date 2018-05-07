@@ -78,7 +78,15 @@ int client_count;
 
 
 /***************************** FUNCTIONS **************************************/
-
+/*************************** THREAD FUNCTIONS *********************************/
+void * talk_to_client(void * something){
+  while(continue_flag){
+    // listen for information
+    // call functions to handle information
+    // put information together with information about other client
+    // send information about both clients
+  } // while
+} // talk_to_client
 /************************* END GAME FUNCTIONS *********************************/
 void stop_game(){
   server_rsp_t quit_msg;
@@ -176,10 +184,10 @@ int main() {
     char ipstr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, ipstr, INET_ADDRSTRLEN);
    
-    //set up the response to the client
+    // set up the response to the client
     response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
 
-    // Add the new client to our list of clients
+    // add the new client to our list of clients
     client_list_t* new_client = (client_list_t*)malloc(sizeof(client_list_t));
     new_client->clientID = client_count;
     strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
@@ -187,6 +195,11 @@ int main() {
     new_client->next = clients;
     clients = new_client;
     client_count++;
+
+    // make new thread to communicate with client
+    pthread new_client;
+    // TODO: change last arg so it has the right arguments for talk_to_client
+    pthread_create(&new_client, NULL, talk_to_client, NULL);
     
     // end game if necessary
     if (message.continue_flag == false) {
@@ -200,7 +213,8 @@ int main() {
     } // else
   } // while
 
- 
+  
+  
   // respond to the client
   write(client_socket, response, sizeof(server_rsp_t));
   // close the socket

@@ -8,6 +8,9 @@
 
 #include "gui.h"
 
+/***************************************MACRO DEFINITIONS*********************************************/
+
+
 #define THREADS 32
 
 // Time step size
@@ -17,12 +20,18 @@
 #define G 100
 
 // Relevent radii
-#define CANNONBALL_RADIUS 5
-#define SPACESHIP_RADIUS 10
+#define CANNONBALL_RADIUS 2
+#define SPACESHIP_RADIUS 4
 
 // Relevant masses
-#define CANNONBALL_MASS 10
-#define SPACESHIP_MASS 30
+#define CANNONBALL_MASS 4
+#define SPACESHIP_MASS 16
+
+// Directions
+#define UP 1
+#define DOWN 2
+#define RIGHT 3
+#define LEFT 4
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -33,6 +42,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+/***************************************STRUCT DEFINITIONS*********************************************/
 
 // This struct holds data for a single cannonball
 typedef struct cannonball {
@@ -54,9 +64,19 @@ typedef struct spaceship {
 // This struct holds data for a star
 typdef struct star {
   float mass;
+  float radius;
   float x_position;
   float y_position;
 } star_t;
+
+/***************************************FUNCTION SIGNATURES*********************************************/
+__host__ star_t* create_stars();
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot);
+__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost);
+__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
+__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
+
+
 
 // This isn't needed because cannonball size isn't random
 /*
@@ -66,19 +86,151 @@ float drand(float min, float max) {
 */
 
 // Compute the radius of a star based on its mass
-
+/*
 __device__ __host__ float star_radius(float mass) {
   return sqrt(mass);
 }
+*/
+/***************************************FUNCTION IMPLEMENTATIONS*********************************************/
 
+// Create a field of stars
+__host__ star_t* create_stars() {
+  star_t* stars = (star_t*) malloc(sizeof(star_t) * 2);
+  stars = {
+    {.mass = 400, .radius = 20, .x_position = SCREEN_WIDTH/3, .y_position = SCREEN_HEIGHT/2};
+    {.mass = 400, .radius = 20, .x_position = 2*(SCREEN_WIDTH/3), .y_position = SCREEN_HEIGHT/2};
+  }
+  return stars;
+}
 
-__global__ void updateCannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars) {
+// Add a cannonball to the field
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot) {
+  float cannonball_x_pos;
+  float cannonball_x_pos;
+
+  switch(direction_shot) {
+    case UP :
+      cannonball_x_pos = spaceship->x_position;
+      cannonball_y_pos = spaceship->y_position - 10; // What if this is outside an edge?
+      break;
+    case DOWN :
+      cannonball_x_pos = spaceship->x_position;
+      cannonball_y_pos = spaceship->y_position + 10;
+      break;
+    case RIGHT :
+      cannonball_x_pos = spaceship->x_position + 10;
+      cannonball_y_pos = spaceship->y_position;
+      break;
+    case LEFT :
+      cannonball_x_pos = spaceship->x_position - 10;
+      cannonball_y_pos = spaceship->y_position;
+      break;
+  }
+  // If there is an edge collision, don't add the cannonball
+  if (cannonball_x_pos < 0 || cannonball_x_pos >= SCREEN_WIDTH || cannonball_y_pos < 0 || cannonball_y_pos >= SCREEN_HEIGHT) {
+    return cannonballs;
+  }
+
+  // Add the new cannonball
+  cannonballs = (cannonball_t*)realloc(cannonball, (num_cannonballs + 1) * sizeof(star_t));
+  cannonballs[num_cannonballs].x_position = cannonball_x_pos;
+  cannonballs[num_cannonballs].y_position = cannonball_y_pos;
+  cannonballs[num_cannonballs].x_velocity = spaceship->x_velocity;
+  cannonballs[num_cannonballs].y_velocity = spaceship->y_velocity;
+
+  return cannonballs;
+}
+
+// Update position and velocity of a spaceship
+__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost) {
+  spaceship->x_position += spaceship->x_velocity * DT;
+  spaceship->y_position += spaceship->y_velocity * DT;
+
+  // Loop over all stars to compute forces
+  for(int j = 0; j < num_stars ; j++) {
+
+    // Compute the distance between the cannonball and each star in each dimension
+    float x_diff = spaceship->x_position - stars[j].x_position;
+    float y_diff = spaceship->y_position - stars[j].y_position;
+
+    // Compute the magnitude of the distance vector
+    float dist = sqrt(x_diff * x_diff + y_diff * y_diff);
+
+    // Normalize the distance vector components
+    x_diff /= dist;
+    y_diff /= dist;
+
+    // Keep a minimum distance, otherwise we get
+    // Is this necessary? Could be used for collisions
+    float combined_radius = SPACESHIP_RADIUS + stars[j].radius);
+    if(dist < combined_radius) {
+      dist = combined_radius;
+    }
+
+    // Compute the x and y accelerations
+    float x_boost;
+    float y_boost;
+    switch(direction_shot) {
+      case UP :
+        x_boost = 0;
+        y_boost = -10;
+        break;
+      case DOWN :
+        x_boost = 0;
+        y_boost = 10;
+        break;
+      case RIGHT :
+        x_boost = 10;
+        y_boost = 0;
+        break;
+      case LEFT :
+        x_boost = -10;
+        y_boost = 0;
+        break;
+    }
+    float x_acceleration = -x_diff * G * CANNONBALL_MASS / (dist * dist) + x_boost;
+    float y_acceleration = -y_diff * G * CANNONBALL_MASS / (dist * dist) + y_boost;
+
+    // Update the star velocity
+    spaceship->x_velocity += x_acceleration * DT;
+    spaceship->y_velocity += y_acceleration * DT;
+
+    // Handle edge collisiosn
+    if(spaceship->x_position < 0 && spaceship->x_velocity < 0) spaceship->x_velocity *= -0.5;
+    if(spaceship->x_position >= SCREEN_WIDTH && spaceship->x_velocity > 0) spaceship->x_velocity *= -0.5;
+    if(spaceship->y_position < 0 && spaceship->y_velocity < 0) spaceship->y_velocity *= -0.5;
+    if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0) spaceship->y_velocity *= -0.5;
+  }
+}
+
+// Has the GPU update cannonballs and transfers them to the CPU.
+__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars) {
+  // cannonball_t* cpu_cannonballs = cannonballs;
+  cannonball_t* gpu_cannonballs = NULL;
+
+  // Realloc from cpu to gpu
+  gpuErrchk(cudaMalloc(&gpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs + 1)));
+  gpuErrchk(cudaMemcpy(gpu_cannonballs, cpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs + 1), cudaMemcpyHostToDevice));
+
+  int blocks = (num_cannonballs + THREADS - 1) / THREADS;
+
+  update_cannonballs_gpu<<<blocks, THREADS>>>(gpu_cannonballs, stars, num_cannonballs, num_stars);
+  gpuErrchk(cudaDeviceSynchronize());
+
+  // Copy udated cannonballs back to CPU
+  gpuErrchk(cudaMemcpy(cpu_cannonballs, gpu_cannonballs, sizeof(cannonball_t) * num_cannonballs, cudaMemcpyDeviceToHost));
+
+  return cpu_cannonballs;
+}
+
+// Updates cannonballs' position and velocity concurrently using the GPU
+__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars) {
   int i = (blockIdx.x * THREADS) + threadIdx.x;
   if (i < num_cannonballs) {
     cannonballs[i].x_position += cannonballs[i].x_velocity * DT;
     cannonballs[i].y_position += cannonballs[i].y_velocity * DT;
 
-    // Loop over all other cannonballs to compute forces
+    // Loop over all stars to compute forces
     for(int j = 0; j < num_stars ; j++) {
       // Don't compute the force of a star on itself
       // vvv cannonballs don't compute on themselves
@@ -97,7 +249,7 @@ __global__ void updateCannonballs(cannonball_t* cannonballs, star_t* stars, int 
 
       // Keep a minimum distance, otherwise we get
       // Is this necessary? Could be used for collisions
-      float combined_radius = CANNONBALL_RADIUS + star_radius(stars[j].mass);
+      float combined_radius = CANNONBALL_RADIUS + stars[j].radius);
       if(dist < combined_radius) {
         dist = combined_radius;
       }
@@ -119,6 +271,55 @@ __global__ void updateCannonballs(cannonball_t* cannonballs, star_t* stars, int 
   }
 }
 
+// check_for_collision helper
+bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius){
+  if(ship_pos == obstacle_pos){return true;}
+  if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
+    if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){
+      // ship's left bound is on the left of the obstacle's right bound
+      return true;
+    }
+  } // ship on right
+
+  if(ship_pos < obstacle_pos){ // the ship is on the left of the obstacle
+    if((ship_pos + STARSHIP_RADIUS) >= (obstacle_pos - obstacle_radius)){
+      // ship's right bound is on the right of the obstacle's left bound
+      return true;
+    }
+  } // ship on left
+  return false;
+} // within_bounds
+
+
+// To check for a collision with a star, make cannonball NULL
+// To check for a collision with a spaceship, make star NULL
+bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star){
+  if(cannonball == NULL){
+    // it's a star
+    if(check_for_collision_helper(spaceship->x_position, star->x_position, star->radius)){
+      // x is within bounds
+      if(check_for_collision_helper(spaceship->y_position, star->y_position, star->radius)){
+        // y is within bounds
+        return true;
+      } // check y
+    } // check x
+  } // star case
+
+  if(star == NULL){
+    // it's a cannonball
+    if(within_bounds(spaceship->x_position, star->x_position,
+                                  CANNONBALL_RADIUS)){
+      // x is within bounds
+      if(within_bounds(spaceship->y_position, star->y_position,
+                                    CANNONBALL_RADIUS)){
+        // y is within bounds
+        return true;
+      } // check y
+    } //check x
+  } // cannonball case
+
+
+/*
 int main(int argc, char** argv) {
   // Initialize the graphical interface
   gui_init();
@@ -201,3 +402,4 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+*/

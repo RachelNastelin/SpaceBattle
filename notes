@@ -4,17 +4,19 @@ Rachel: Server, communicating with clients
 Caelin: Client, user input, UI stuff(?)
 
 ========= Current Status ==========
-Driver:
+Driver: Written, functions not called anywhere in server, but they will 
+        be. Not compiled because we need to make it a .cu file first, and 
+        we don't know how to do that. 
 Server: As of right now, the server connects to the clients and sends
         information back and forth.
-Client:
+Client: Written, compiles
 
 
 ============ Questions =============
-
+1. How do we make our driver.c file a .cu file? 
 
 ===== Change before turning in =====
-Driver:
+Driver: 
 Server: Get rid of print statement when a new client connects because the
         clientIDs are wrong and can't be fixed
 Client:

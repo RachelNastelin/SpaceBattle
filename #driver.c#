@@ -5,10 +5,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <SDL.h>
-#include <cuda.h>
 
 #include "gui.h"
-#include "driver.h"
 
 /***************************************MACRO DEFINITIONS*********************************************/
 
@@ -29,9 +27,6 @@
 #define CANNONBALL_MASS 4
 #define SPACESHIP_MASS 16
 
-#define CANNONBALL_EXIT_POS 10
-#define CANNONBALL_EXIT_VEL 10
-
 // Directions
 #define UP 1
 #define DOWN 2
@@ -47,13 +42,43 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+/***************************************STRUCT DEFINITIONS*********************************************/
+
+// This struct holds data for a single cannonball
+typedef struct cannonball {
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} cannonball_t;
+
+// This struct holds data for a user's spaceship
+typedef struct spaceship {
+  int clientID;
+  float x_position;
+  float y_position;
+  float x_velocity;
+  float y_velocity;
+} spaceship_t;
+
+// This struct holds data for a star
+typdef struct star {
+  float mass;
+  float radius;
+  float x_position;
+  float y_position;
+} star_t;
 
 /***************************************FUNCTION SIGNATURES*********************************************/
 __host__ star_t* create_stars();
-__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot);
-__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost);
-__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
-__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs,
+                                      int num_cannonballs, int direction_shot);
+__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars,
+                                       int direction_boost);
+__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars,
+                                           int num_cannonballs, int num_stars);
+__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars,
+                                       int num_cannonballs, int num_stars);
 bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star);
 bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius);
 
@@ -86,36 +111,25 @@ __host__ star_t* create_stars() {
 
 // Add a cannonball to the field
 __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot) {
-  // TO DO: INCLUDE CANNONBALL VELOCITY
   float cannonball_x_pos;
   float cannonball_x_pos;
-  float cannonball_x_vel;
-  float cannonball_y_vel;
 
   switch(direction_shot) {
     case UP :
       cannonball_x_pos = spaceship->x_position;
-      cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;
-      cannonball_x_vel = spaceship->x_velocity;
-      cannonball_y_vel = spaceship->y_velocity - CANNONBALL_EXIT_VEL;
+      cannonball_y_pos = spaceship->y_position - 10; // What if this is outside an edge?
       break;
     case DOWN :
       cannonball_x_pos = spaceship->x_position;
-      cannonball_y_pos = spaceship->y_position + CANNONBALL_EXIT_POS;
-      cannonball_x_vel = spaceship->x_velocity;
-      cannonball_y_vel = spaceship->y_velocity + CANNONBALL_EXIT_VEL;
+      cannonball_y_pos = spaceship->y_position + 10;
       break;
     case RIGHT :
-      cannonball_x_pos = spaceship->x_position + CANNONBALL_EXIT_POS;
+      cannonball_x_pos = spaceship->x_position + 10;
       cannonball_y_pos = spaceship->y_position;
-      cannonball_x_vel = spaceship->x_velocity + CANNONBALL_EXIT_VEL;
-      cannonball_y_vel = spaceship->y_velocity;
       break;
     case LEFT :
-      cannonball_x_pos = spaceship->x_position - CANNONBALL_EXIT_POS;
+      cannonball_x_pos = spaceship->x_position - 10;
       cannonball_y_pos = spaceship->y_position;
-      cannonball_x_vel = spaceship->x_velocity - CANNONBALL_EXIT_VEL;
-      cannonball_y_vel = spaceship->y_velocity;
       break;
   }
   // If there is an edge collision, don't add the cannonball
@@ -127,8 +141,8 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
   cannonballs = (cannonball_t*)realloc(cannonball, (num_cannonballs + 1) * sizeof(star_t));
   cannonballs[num_cannonballs].x_position = cannonball_x_pos;
   cannonballs[num_cannonballs].y_position = cannonball_y_pos;
-  cannonballs[num_cannonballs].x_velocity = cannonball_x_vel;
-  cannonballs[num_cannonballs].y_velocity = cannonball_y_vel;
+  cannonballs[num_cannonballs].x_velocity = spaceship->x_velocity;
+  cannonballs[num_cannonballs].y_velocity = spaceship->y_velocity;
 
   return cannonballs;
 }

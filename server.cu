@@ -10,8 +10,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <time.h>
+#include <cuda.h>
 
 #include "board.h"
+#include "driver.h"
 
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
 #define SERVER_PORT 6664
@@ -21,23 +23,6 @@
 #define RIGHT 3
 #define LEFT 4
 /********************************* STRUCTS **********************************/
-
-// struct for each cannonball
-typedef struct cannonball {
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} cannonball_t;
-
-// struct for each player's spaceship
-typedef struct spaceship {
-  int clientID; // to keep track of whose spaceship is whose
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} spaceship_t;
 
 // information sent from client to server
 typedef struct msg_to_server{
@@ -72,27 +57,38 @@ typedef struct client_list {
   struct client_list * next; 
 } client_list_t;
 
+typedef struct talk_to_client_args {
+  int port;
+  int socket;
+} talk_to_client_args_t;
+
 /****************************** GLOBALS **************************************/
 
 // GLOBAL CLIENT LIST
 client_list_t * clients;
 int client_count;
 
+/**************************** FUNCTIONS **************************************/
+/*************************** SIGNATURES ***************************************/
+void stop_game();
+void remove_client (int port);
+void quit_client (int port);
+void end_game ();
 
-/***************************** FUNCTIONS **************************************/
 /*************************** THREAD FUNCTIONS *********************************/
-void * talk_to_client(void * something){
-  while(continue_flag){
+void * talk_to_client(void * args){
+  talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
+  while(true){
      // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
-      if(clients[i] == LOST_CONNECTION){
-        remove_client(/* A port */);
+      if(clients[i].socket == LOST_CONNECTION){
+        remove_client(client_info->port);
       } // if
     } // for
     
     // listen for information
-    msg_to_server * response = malloc(sizeof(msg_to_server_t));
-    read(s, response, sizeof(msg_to_server_t));
+    msg_to_server * response = (msg_to_server*)malloc(sizeof(msg_to_server_t));
+    read(client_info->socket, response, sizeof(msg_to_server_t));
 
     // call functions to handle information
     
@@ -125,14 +121,14 @@ void remove_client (int port) {
 void quit_client (int port){
   // TODO: change this to whatever print function we're using for the UI
   printf("One player has quit the game.\n");
-  server_rsp_t quit_msg;
+  //server_rsp_t quit_msg;
   stop_game();
 } // quit_client
 
 // called when the game ends, which is when at least one player has died
 void end_game (){
   // TODO: announce winner
-  server_rsp_t quit_msg;
+  //server_rsp_t quit_msg;
   stop_game();
 } // end_game
 
@@ -147,11 +143,12 @@ int main() {
   }
 
   // Listen at this address.
-  struct sockaddr_in addr = {
-    .sin_addr.s_addr = INADDR_ANY,
-    .sin_family = AF_INET,
-    .sin_port = htons(SERVER_PORT)
-  };
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(SERVER_PORT);
+  
 
   // Bind to the specified address
   if(bind(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
@@ -211,9 +208,12 @@ int main() {
     client_count++;
 
     // make new thread to communicate with client
-    pthread new_client;
-    // TODO: change last arg so it has the right arguments for talk_to_client
-    pthread_create(&new_client, NULL, talk_to_client, NULL);
+    pthread_t new_client_thread;
+    talk_to_client_args_t * args = (talk_to_client_args_t*)malloc(
+                                        sizeof(talk_to_client_args_t));
+    args->port = new_client->port_num;
+    args->socket = client_socket;
+    pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
     
     // end game if necessary
     if (message.continue_flag == false) {

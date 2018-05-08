@@ -7,6 +7,7 @@
 #include <SDL.h>
 
 #include "gui.h"
+#include "driver.h"
 
 /***************************************MACRO DEFINITIONS*********************************************/
 
@@ -32,9 +33,9 @@
 
 // Directions
 #define UP 1
-#define DOWN 2
-#define RIGHT 3
-#define LEFT 4
+#define DOWN -1
+#define RIGHT 2
+#define LEFT -2
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -45,34 +46,9 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
-/***************************************STRUCT DEFINITIONS*********************************************/
-
-// This struct holds data for a single cannonball
-typedef struct cannonball {
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} cannonball_t;
-
-// This struct holds data for a user's spaceship
-typedef struct spaceship {
-  int clientID;
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} spaceship_t;
-
-// This struct holds data for a star
-typdef struct star {
-  float mass;
-  float radius;
-  float x_position;
-  float y_position;
-} star_t;
 
 /***************************************FUNCTION SIGNATURES*********************************************/
+__host__ spaceship_t* init_spaceship(int clientID);
 __host__ star_t* create_stars();
 __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot);
 __host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost);
@@ -98,25 +74,52 @@ __device__ __host__ float star_radius(float mass) {
 */
 /***************************************FUNCTION IMPLEMENTATIONS*********************************************/
 
+__host__ spaceship_t* init_spaceship(int clientID) {
+  //TO DO
+  spaceship_t* spaceship = (spaceship_t*) malloc(sizeof(spaceship_t));
+
+  spaceship->clientID = clientID;
+
+  switch(clientID) {
+    case 0 :
+      spaceship->x_position = SCREEN_WIDTH/5;
+      spaceship->y_position = SCREEN_HEIGHT/5;
+      break;
+    case 1 :
+      spaceship->x_position = 4*(SCREEN_WIDTH/5);
+      spaceship->y_position = 4*(SCREEN_HEIGHT/5);
+      break;
+  }
+  return spaceship;
+}
+
 // Create a field of stars
 __host__ star_t* create_stars() {
   star_t* stars = (star_t*) malloc(sizeof(star_t) * 2);
-  stars = {
-    {.mass = 400, .radius = 20, .x_position = SCREEN_WIDTH/3, .y_position = SCREEN_HEIGHT/2};
-    {.mass = 400, .radius = 20, .x_position = 2*(SCREEN_WIDTH/3), .y_position = SCREEN_HEIGHT/2};
-  }
+  
+  // First star
+  stars[0]->mass = 400;
+  stars[0]->radius = 20;
+  stars[0]->x_position = SCREEN_WIDTH/3;
+  stars[0]->y_position = SCREEN_WIDTH/2;
+  // Second star
+  stars[1]->mass = 400;
+  stars[1]->radius = 20;
+  stars[1]->x_position = 2*(SCREEN_WIDTH/3);
+  stars[1]->y_position = SCREEN_WIDTH/2;
+
   return stars;
 }
 
 // Add a cannonball to the field
-__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot) {
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int cannonball_direction) {
   // TO DO: INCLUDE CANNONBALL VELOCITY
   float cannonball_x_pos;
   float cannonball_x_pos;
   float cannonball_x_vel;
   float cannonball_y_vel;
 
-  switch(direction_shot) {
+  switch(cannonball_direction) {
     case UP :
       cannonball_x_pos = spaceship->x_position;
       cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;

@@ -23,43 +23,11 @@
 #define RIGHT 3
 #define LEFT 4
 /********************************* STRUCTS **********************************/
-
-// information sent from client to server
-typedef struct msg_to_server{
-  int clientID; // to differentiate between players
-  int listen_port;
-  bool died; // true if the spaceship intersected with a cannonball or star
-  bool quitting; // 0 = not quitting, 1 = quitting
-  bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
-  int direction; // LEFT, RIGHT, UP, or DOWN
-  bool continue_flag; // when false, stops all threads on client side
-} msg_to_server_t;
-
-// information sent from server to client
-typedef struct server_rsp {
-  int client_socket;
-  int clientID;
-  int listen_port;
-  cannonball_t * cannonballs; // array used for determining spaceship death
-  bool continue_flag; // when false, stops all threads on client side
-  
-  // TODO: the board, however we're storing it
-  /* Add things */
-} server_rsp_t;
-
-// client storage for the server's internal list of clients.
-// each client_list variable represents one client in the list.
-typedef struct client_list {
-  int clientID;
-  char ip[INET_ADDRSTRLEN]; // IP address of client
-  int port_num; // port of client
-  int socket;
-  struct client_list * next; 
-} client_list_t;
-
 typedef struct talk_to_client_args {
+  int clientID;
   int port;
   int socket;
+  spaceship_t * ship;
 } talk_to_client_args_t;
 
 /****************************** GLOBALS **************************************/
@@ -86,12 +54,12 @@ void * talk_to_client(void * args){
       } // if
     } // for
     
-    // listen for information
+    // listen for information from client
     msg_to_server * response = (msg_to_server*)malloc(sizeof(msg_to_server_t));
     read(client_info->socket, response, sizeof(msg_to_server_t));
 
     // call functions to handle information
-    
+    update_spaceship(args->ship, args
     // put information together with information about other client
     // send information about both clients
   } // while
@@ -182,6 +150,7 @@ int main() {
       exit(2);
     }
     clients[client_count - 1].socket = client_socket;
+    clients[client_count - 1].ship = init_spaceship(client_count);
     // read a message from the client
     msg_to_server_t message;
     if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){
@@ -213,6 +182,8 @@ int main() {
                                         sizeof(talk_to_client_args_t));
     args->port = new_client->port_num;
     args->socket = client_socket;
+    args->clientID = new_client->clientID;
+    args->ship = clients[client_count - 1].ship; 
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
     
     // end game if necessary

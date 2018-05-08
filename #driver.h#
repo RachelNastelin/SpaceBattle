@@ -56,6 +56,7 @@ typedef struct client_list {
   char ip[INET_ADDRSTRLEN]; // IP address of client
   int port_num; // port of client
   int socket;
+  spaceship_t * ship;
   struct client_list * next; 
 } client_list_t;
 

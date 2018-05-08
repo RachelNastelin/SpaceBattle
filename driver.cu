@@ -27,6 +27,9 @@
 #define CANNONBALL_MASS 4
 #define SPACESHIP_MASS 16
 
+#define CANNONBALL_EXIT_POS 10
+#define CANNONBALL_EXIT_VEL 10
+
 // Directions
 #define UP 1
 #define DOWN 2
@@ -107,25 +110,36 @@ __host__ star_t* create_stars() {
 
 // Add a cannonball to the field
 __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int direction_shot) {
+  // TO DO: INCLUDE CANNONBALL VELOCITY
   float cannonball_x_pos;
   float cannonball_x_pos;
+  float cannonball_x_vel;
+  float cannonball_y_vel;
 
   switch(direction_shot) {
     case UP :
       cannonball_x_pos = spaceship->x_position;
-      cannonball_y_pos = spaceship->y_position - 10; // What if this is outside an edge?
+      cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;
+      cannonball_x_vel = spaceship->x_velocity;
+      cannonball_y_vel = spaceship->y_velocity - CANNONBALL_EXIT_VEL;
       break;
     case DOWN :
       cannonball_x_pos = spaceship->x_position;
-      cannonball_y_pos = spaceship->y_position + 10;
+      cannonball_y_pos = spaceship->y_position + CANNONBALL_EXIT_POS;
+      cannonball_x_vel = spaceship->x_velocity;
+      cannonball_y_vel = spaceship->y_velocity + CANNONBALL_EXIT_VEL;
       break;
     case RIGHT :
-      cannonball_x_pos = spaceship->x_position + 10;
+      cannonball_x_pos = spaceship->x_position + CANNONBALL_EXIT_POS;
       cannonball_y_pos = spaceship->y_position;
+      cannonball_x_vel = spaceship->x_velocity + CANNONBALL_EXIT_VEL;
+      cannonball_y_vel = spaceship->y_velocity;
       break;
     case LEFT :
-      cannonball_x_pos = spaceship->x_position - 10;
+      cannonball_x_pos = spaceship->x_position - CANNONBALL_EXIT_POS;
       cannonball_y_pos = spaceship->y_position;
+      cannonball_x_vel = spaceship->x_velocity - CANNONBALL_EXIT_VEL;
+      cannonball_y_vel = spaceship->y_velocity;
       break;
   }
   // If there is an edge collision, don't add the cannonball
@@ -137,8 +151,8 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
   cannonballs = (cannonball_t*)realloc(cannonball, (num_cannonballs + 1) * sizeof(star_t));
   cannonballs[num_cannonballs].x_position = cannonball_x_pos;
   cannonballs[num_cannonballs].y_position = cannonball_y_pos;
-  cannonballs[num_cannonballs].x_velocity = spaceship->x_velocity;
-  cannonballs[num_cannonballs].y_velocity = spaceship->y_velocity;
+  cannonballs[num_cannonballs].x_velocity = cannonball_x_vel;
+  cannonballs[num_cannonballs].y_velocity = cannonball_y_vel;
 
   return cannonballs;
 }

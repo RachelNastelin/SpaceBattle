@@ -94,28 +94,29 @@ __host__ spaceship_t* init_spaceship(int clientID) {
 }
 
 // Create a field of stars
-__host__ star_t* create_stars() {
+__host__ void create_stars(star_t* return_stars) {
   star_t* stars = (star_t*) malloc(sizeof(star_t) * 2);
-  
+
   // First star
-  stars[0]->mass = 400;
-  stars[0]->radius = 20;
-  stars[0]->x_position = SCREEN_WIDTH/3;
+  return_stars[0]->mass = 400;
+  return_stars[0]->radius = 20;
+  return_stars[0]->x_position = SCREEN_WIDTH/3;
   stars[0]->y_position = SCREEN_WIDTH/2;
   // Second star
-  stars[1]->mass = 400;
-  stars[1]->radius = 20;
-  stars[1]->x_position = 2*(SCREEN_WIDTH/3);
-  stars[1]->y_position = SCREEN_WIDTH/2;
+  return_stars[1]->mass = 400;
+  return_stars[1]->radius = 20;
+  return_stars[1]->x_position = 2*(SCREEN_WIDTH/3);
+  return_stars[1]->y_position = SCREEN_WIDTH/2;
 
-  return stars;
+  //return return_stars;
 }
 
 // Add a cannonball to the field
-__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs, int cannonball_direction) {
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs,
+  int num_cannonballs, int cannonball_direction) {
   // TO DO: INCLUDE CANNONBALL VELOCITY
   float cannonball_x_pos;
-  float cannonball_x_pos;
+  float cannonball_y_pos;
   float cannonball_x_vel;
   float cannonball_y_vel;
 

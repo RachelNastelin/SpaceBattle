@@ -10,8 +10,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <time.h>
+#include <cuda.h>
 
 #include "board.h"
+#include "driver.h"
 
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
 #define SERVER_PORT 6664
@@ -21,56 +23,12 @@
 #define RIGHT 3
 #define LEFT 4
 /********************************* STRUCTS **********************************/
-
-// struct for each cannonball
-typedef struct cannonball {
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} cannonball_t;
-
-// struct for each player's spaceship
-typedef struct spaceship {
-  int clientID; // to keep track of whose spaceship is whose
-  float x_position;
-  float y_position;
-  float x_velocity;
-  float y_velocity;
-} spaceship_t;
-
-// information sent from client to server
-typedef struct msg_to_server{
-  int clientID; // to differentiate between players
-  int listen_port;
-  bool died; // true if the spaceship intersected with a cannonball or star
-  bool quitting; // 0 = not quitting, 1 = quitting
-  bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
-  int direction; // LEFT, RIGHT, UP, or DOWN
-  bool continue_flag; // when false, stops all threads on client side
-} msg_to_server_t;
-
-// information sent from server to client
-typedef struct server_rsp {
-  int client_socket;
+typedef struct talk_to_client_args {
   int clientID;
-  int listen_port;
-  cannonball_t * cannonballs; // array used for determining spaceship death
-  bool continue_flag; // when false, stops all threads on client side
-  
-  // TODO: the board, however we're storing it
-  /* Add things */
-} server_rsp_t;
-
-// client storage for the server's internal list of clients.
-// each client_list variable represents one client in the list.
-typedef struct client_list {
-  int clientID;
-  char ip[INET_ADDRSTRLEN]; // IP address of client
-  int port_num; // port of client
+  int port;
   int socket;
-  struct client_list * next; 
-} client_list_t;
+  spaceship_t * ship;
+} talk_to_client_args_t;
 
 /****************************** GLOBALS **************************************/
 
@@ -78,24 +36,30 @@ typedef struct client_list {
 client_list_t * clients;
 int client_count;
 
+/**************************** FUNCTIONS **************************************/
+/*************************** SIGNATURES ***************************************/
+void stop_game();
+void remove_client (int port);
+void quit_client (int port);
+void end_game ();
 
-/***************************** FUNCTIONS **************************************/
 /*************************** THREAD FUNCTIONS *********************************/
-void * talk_to_client(void * something){
-  while(continue_flag){
+void * talk_to_client(void * args){
+  talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
+  while(true){
      // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
-      if(clients[i] == LOST_CONNECTION){
-        remove_client(/* A port */);
+      if(clients[i].socket == LOST_CONNECTION){
+        remove_client(client_info->port);
       } // if
     } // for
     
-    // listen for information
-    msg_to_server * response = malloc(sizeof(msg_to_server_t));
-    read(s, response, sizeof(msg_to_server_t));
+    // listen for information from client
+    msg_to_server * response = (msg_to_server*)malloc(sizeof(msg_to_server_t));
+    read(client_info->socket, response, sizeof(msg_to_server_t));
 
     // call functions to handle information
-    
+    update_spaceship(args->ship, args
     // put information together with information about other client
     // send information about both clients
   } // while
@@ -125,14 +89,14 @@ void remove_client (int port) {
 void quit_client (int port){
   // TODO: change this to whatever print function we're using for the UI
   printf("One player has quit the game.\n");
-  server_rsp_t quit_msg;
+  //server_rsp_t quit_msg;
   stop_game();
 } // quit_client
 
 // called when the game ends, which is when at least one player has died
 void end_game (){
   // TODO: announce winner
-  server_rsp_t quit_msg;
+  //server_rsp_t quit_msg;
   stop_game();
 } // end_game
 
@@ -147,11 +111,12 @@ int main() {
   }
 
   // Listen at this address.
-  struct sockaddr_in addr = {
-    .sin_addr.s_addr = INADDR_ANY,
-    .sin_family = AF_INET,
-    .sin_port = htons(SERVER_PORT)
-  };
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(SERVER_PORT);
+  
 
   // Bind to the specified address
   if(bind(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
@@ -185,6 +150,7 @@ int main() {
       exit(2);
     }
     clients[client_count - 1].socket = client_socket;
+    clients[client_count - 1].ship = init_spaceship(client_count);
     // read a message from the client
     msg_to_server_t message;
     if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){
@@ -211,9 +177,14 @@ int main() {
     client_count++;
 
     // make new thread to communicate with client
-    pthread new_client;
-    // TODO: change last arg so it has the right arguments for talk_to_client
-    pthread_create(&new_client, NULL, talk_to_client, NULL);
+    pthread_t new_client_thread;
+    talk_to_client_args_t * args = (talk_to_client_args_t*)malloc(
+                                        sizeof(talk_to_client_args_t));
+    args->port = new_client->port_num;
+    args->socket = client_socket;
+    args->clientID = new_client->clientID;
+    args->ship = clients[client_count - 1].ship; 
+    pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
     
     // end game if necessary
     if (message.continue_flag == false) {

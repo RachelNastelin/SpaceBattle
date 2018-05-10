@@ -5,13 +5,10 @@ Caelin: Client, user input, UI stuff(?)
 
 
 ========= Current Status ==========
-Driver: Written, functions not called anywhere in server, but they will 
-        be. Doesn't complie!
-        -Update board needs to be implemented/
-Server: As of right now, the server connects to the clients and sends
-        information back and forth. We have to add driver functions to 
-        Server when Driver is complete/complies.
-Client: Written, compiles
+Driver: Written, ** doesn't compile!! ** Working on collision (?)
+Server: Server can connect to the clients and send information back and forth. Calls driver functions 
+        when appropriate. 
+Client: Written, compiles, calls board functions when appropriate. 
 
 -quitting/continue_flag may be a problem later? (Neither is fully implemented... we should only need one)
 

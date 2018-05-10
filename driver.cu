@@ -7,7 +7,7 @@
 #include <SDL.h>
 #include <cuda.h>
 
-#include "gui.h"
+#include "board.h"
 #include "driver.h"
 
 /***************************************MACRO DEFINITIONS*********************************************/
@@ -332,6 +332,7 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
 // To check for a collision with a star, make cannonball NULL
 // To check for a collision with a spaceship, make star NULL
 bool is_collision(spaceship_t* spaceship, cannonball_t* cannonballs) {
+  
   if(cannonball == NULL){
     // it's a star
     if(check_for_collision_helper(spaceship->x_position, star->x_position, star->radius)){
@@ -357,8 +358,27 @@ bool is_collision(spaceship_t* spaceship, cannonball_t* cannonballs) {
   } // cannonball case
 }
 
-// check_for_collision helper
-bool check_collision(int ship_pos, int obstacle_pos, int obstacle_radius){
+// Is there a collision here?
+bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius){
+  // Compute the distance between each obj in each dimension
+  float x_diff = obj1_x - obj2_x;
+  float y_diff = obj1_y - obj2_y;
+
+  // Compute the magnitude of the distance vector
+  float dist = sqrt(x_diff * x_diff + y_diff * y_diff);
+
+  // If the distance between the objects is <= their combined radius, then there is a collision
+  if(dist <= obj1_radius + obj2_radius) {
+    return true;
+  } else {
+    return false;
+  }
+}
+  
+
+
+
+  
   if(ship_pos == obstacle_pos){return true;}
   if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
     if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){
@@ -375,6 +395,12 @@ bool check_collision(int ship_pos, int obstacle_pos, int obstacle_radius){
   } // ship on left
   return false;
 } // within_bounds
+
+
+
+
+
+
 
 
 /*

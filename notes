@@ -13,6 +13,8 @@ Server: As of right now, the server connects to the clients and sends
         Server when Driver is complete/complies.
 Client: Written, compiles
 
+-quitting/continue_flag may be a problem later? (Neither is fully implemented... we should only need one)
+
 
 ===== Change before turning in =====
 Driver: 

@@ -39,14 +39,22 @@ typedef struct msg_to_server{
 
 // information sent from server to client
 typedef struct server_rsp {
-  int client_socket;
-  int clientID;
-  int listen_port;
+  /* Client 0 */
+  int client_socket0;
+  int clientID0;
+  int listen_port0;
+  spaceship_t * ship0;
+  
+  /* Client 1 */
+  int client_socket1;
+  int clientID1;
+  int listen_port1;
+  spaceship_t * ship1;
+
+  /* Same for both clients  */
   cannonball_t * cannonballs; // array used for determining spaceship death
   bool continue_flag; // when false, stops all threads on client side
   
-  // TODO: the board, however we're storing it
-  /* Add things */
 } server_rsp_t;
 
 // client storage for the server's internal list of clients.

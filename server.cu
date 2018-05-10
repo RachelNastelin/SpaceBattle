@@ -28,6 +28,8 @@ typedef struct talk_to_client_args {
   int port;
   int socket;
   spaceship_t * ship;
+  int direction; //TODO: initialize this somewhere
+  bool cannonball_shot; //TODO: initialize this somewhere
 } talk_to_client_args_t;
 
 /****************************** GLOBALS **************************************/
@@ -35,6 +37,15 @@ typedef struct talk_to_client_args {
 // GLOBAL CLIENT LIST
 client_list_t * clients;
 int client_count;
+
+server_rsp * send_to_clients;
+pthread_mutex_t send_to_clients_lock;
+pthread_mutex_init(&send_to_clients_lock, NULL);
+
+cannonball_t * cannonballs;
+pthread_mutex_t cannonballs_lock;
+pthread_mutex_init(&cannonballs_lock, NULL);
+int num_cannonballs;
 
 /**************************** FUNCTIONS **************************************/
 /*************************** SIGNATURES ***************************************/
@@ -47,7 +58,7 @@ void end_game ();
 void * talk_to_client(void * args){
   talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
   while(true){
-     // make sure that all the clients are still connected
+    // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
       if(clients[i].socket == LOST_CONNECTION){
         remove_client(client_info->port);
@@ -59,9 +70,47 @@ void * talk_to_client(void * args){
     read(client_info->socket, response, sizeof(msg_to_server_t));
 
     // call functions to handle information
-    update_spaceship(args->ship, args
+    if(client_info->cannonball_shot){
+      if(cannonballs == NULL){
+	cannonballs = (cannonball_t*)malloc(sizeof(cannonball_t));
+      } // if
+      pthread_mutex_lock(&cannonballs_lock);
+      add_cannonball(client_info->ship, cannonballs, num_cannonballs,
+		     client_info->direction);
+      pthread_mutex_unlock(&cannonballs_lock);
+      num_cannonballs++;
+    } // if a cannonball was shot
+    
     // put information together with information about other client
+    // step 1: which client are we working with?
+    int i = 0;
+    while(clients[i].clientID != client_info->clientID);
+    if (i ==0){
+      // step 2: change the info in send_to_clients for the client you're
+      //         working with
+      pthread_mutex_lock(&send_to_clients_lock);
+      send_to_clients->clientID0 = clients[i].clientID;
+      send_to_clients->client_socket0 = clients[i].socket;
+      send_to_clients->listen_port0 = clients[i].port_num;
+      send_to_clients->ship0 = update_spaceship(args->ship,
+						client_info->direction);
+      pthread_mutex_unlock(&send_to_clients_lock);
+    } else if (i == 1){
+      // step 2: change the info in send_to_clients for the client you're
+      //         working with
+      pthread_mutex_lock(&send_to_clients_lock);
+      send_to_clients->clientID1 = clients[i].clientID;
+      send_to_clients->client_socket1 = clients[i].socket;
+      send_to_clients->listen_port1 = clients[i].port_num;
+      send_to_clients->ship1 = update_spaceship(args->ship,
+						client_info->direction);
+      pthread_mutex_unlock(&send_to_clients_lock);
+    }
+
     // send information about both clients
+    for(int j = 0; j < 2; j++){
+      write(client[i].socket, send_to_clients, sizeof(send_to_clients_t));
+    } // for
   } // while
 } // talk_to_client
 /************************* END GAME FUNCTIONS *********************************/
@@ -179,7 +228,7 @@ int main() {
     // make new thread to communicate with client
     pthread_t new_client_thread;
     talk_to_client_args_t * args = (talk_to_client_args_t*)malloc(
-                                        sizeof(talk_to_client_args_t));
+								  sizeof(talk_to_client_args_t));
     args->port = new_client->port_num;
     args->socket = client_socket;
     args->clientID = new_client->clientID;

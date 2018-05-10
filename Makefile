@@ -9,7 +9,7 @@ clean:
 	rm -f client
 	rm -f server
 
-client: Client.cu
-	$(CC) $(CFLAGS) -o client Client.cu $(LDFLAGS) 
+client: Client.cu board.cu
+	$(CC) $(CFLAGS) -o client Client.cu board.cu $(LDFLAGS) 
 server: server.cu driver.cu
 	$(CC) $(CFLAGS) -o server server.cu driver.cu $(LDFLAGS) 

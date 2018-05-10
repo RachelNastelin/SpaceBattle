@@ -1,4 +1,4 @@
-#include <pthread.h>
+ #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -55,6 +55,9 @@ void end_game ();
 /*************************** THREAD FUNCTIONS *********************************/
 void * talk_to_client(void * args){
   talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
+  //client_info->clientID = client_count;
+
+  
   while(true){
     // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
@@ -106,6 +109,7 @@ void * talk_to_client(void * args){
 
     // send information about both clients
     for(int j = 0; j < 2; j++){
+      send_to_clients->target_clientID = j;
       write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
     } // for
   } // while
@@ -194,7 +198,6 @@ int main() {
   // set up the list of connected clients
   clients = (client_list_t*)malloc(sizeof(client_list_t));
   int client_socket;
-  server_rsp_t * response;
   pthread_mutex_init(&(send_to_clients_lock), NULL);
   pthread_mutex_init(&(cannonballs_lock), NULL);
 
@@ -239,10 +242,7 @@ int main() {
     client_count++;
 
     
-    /*============== SET UP COMMUNICATION WITH NEW CLIENT ====================*/
-    // set up the response to the client
-    response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
-   
+    /*============= SET UP COMMUNICATION WITH NEW CLIENT ====================*/ 
     // make new thread to communicate with client
     pthread_t new_client_thread;
     talk_to_client_args_t * args = (talk_to_client_args_t*)

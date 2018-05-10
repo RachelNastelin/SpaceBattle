@@ -54,6 +54,7 @@ typedef struct server_rsp {
   /* Same for both clients  */
   cannonball_t * cannonballs; // array used for determining spaceship death
   bool continue_flag; // when false, stops all threads on client side
+  int target_clientID;
   
 } server_rsp_t;
 

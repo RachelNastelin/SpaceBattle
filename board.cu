@@ -115,12 +115,13 @@ void gui_draw_star(int center_x, int center_y, float radius, color_t color) {
 //Drawing ship (it's a square)
 void gui_draw_ship(int center_x, int center_y){
   // Based on method from http://groups.csail.mit.edu/graphics/classes/6.837/F98/Lecture6/circle.html
+  color_t ship_color = {0,0,255,0};
   for(int x=0; x<=SHIP_RADIUS; x++) {
     for(int y=0; y<=SHIP_RADIUS; y++) {
-      gui_set_pixel(center_x + x, center_y + y, color);
-      gui_set_pixel(center_x + x, center_y - y, color);
-      gui_set_pixel(center_x - x, center_y + y, color);
-      gui_set_pixel(center_x - x, center_y - y, color);
+      gui_set_pixel(center_x + x, center_y + y, ship_color);
+      gui_set_pixel(center_x + x, center_y - y, ship_color);
+      gui_set_pixel(center_x - x, center_y + y, ship_color);
+      gui_set_pixel(center_x - x, center_y - y, ship_color);
     }
   }
 }
@@ -130,14 +131,15 @@ void gui_draw_ship(int center_x, int center_y){
 void gui_draw_cannonballs(int center_x, int center_y){
   // Loop over one quadrant of the circle's points
   // Based on method from http://groups.csail.mit.edu/graphics/classes/6.837/F98/Lecture6/circle.html
+  color_t cannonball_color = {0,0,0,255};
   for(int x=0; x<=CANNONBALL_RADIUS; x++) {
     for(int y=0; y<=CANNONBALL_RADIUS; y++) {
       // If this point is inside the circle, draw a point in all four quadrants
       if(x * x + y * y < CANNONBALL_RADIUS * CANNONBALL_RADIUS) {
-        gui_set_pixel(center_x + x, center_y + y, color);
-        gui_set_pixel(center_x + x, center_y - y, color);
-        gui_set_pixel(center_x - x, center_y + y, color);
-        gui_set_pixel(center_x - x, center_y - y, color);
+        gui_set_pixel(center_x + x, center_y + y, cannonball_color);
+        gui_set_pixel(center_x + x, center_y - y, cannonball_color);
+        gui_set_pixel(center_x - x, center_y + y, cannonball_color);
+        gui_set_pixel(center_x - x, center_y - y, cannonball_color);
       }
     }
   }

@@ -227,8 +227,15 @@ int main(int argc, char**argv){
   server_rsp_t * response = server_connect(msg_to_server);
 
   // edit our globals to take into account information gotten from the server
-  global_clientID = response->clientID;
+  if(response->target_clientID == 0){
+    global_clientID = response->clientID0;
+  }
+  else{
+    global_clientID = response->clientID1;
+
+  }
   msg_to_server->clientID = global_clientID;
+  
 
   /************************* DISPLAY BOARD **********************************/
   gui_draw_ship(response->ship0->x_position,response->ship0->y_position);

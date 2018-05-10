@@ -48,21 +48,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 
-/***************************************FUNCTION SIGNATURES*********************************************/
-/*
-__host__ star_t* init_stars();
-__host__ spaceship_t* init_spaceship(spaceship_t* spaceship, int clientID);
-__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot);
-__host__ bool cannonball_in_bounds(cannonball_t* cannonball);
-__host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs);
-__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, int direction_boost);
-__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
-__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs);
-__host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);
-__host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius);
-
-
-
 
 // This isn't needed because cannonball size isn't random
 /*
@@ -71,12 +56,7 @@ float drand(float min, float max) {
 }
 */
 
-// Compute the radius of a star based on its mass
-/*
-__device__ __host__ float star_radius(float mass) {
-  return sqrt(mass);
-}
-*/
+
 /***************************************GLOBAL VARIABLES*********************************************/
 // These variables should never be modified beyond their initialized values.
 star_t* stars;
@@ -138,7 +118,7 @@ __host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_sho
   float cannonball_x_vel;
   float cannonball_y_vel;
 
-  switch(cannonball_direction) {
+  switch(direction_shot) {
     case UP :
       cannonball_x_pos = spaceship->x_position;
       cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;
@@ -166,7 +146,7 @@ __host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_sho
   }
 
   new_cannonball->x_position = cannonball_x_pos;
-  mew_cannonball->y_position = cannonball_y_pos;
+  new_cannonball->y_position = cannonball_y_pos;
   new_cannonball->x_velocity = cannonball_x_vel;
   new_cannonball->y_velocity = cannonball_y_vel;
 
@@ -237,7 +217,7 @@ __host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
     // Compute the x and y accelerations
     float x_boost;
     float y_boost;
-    switch(direction_shot) {
+    switch(direction_boost) {
       case UP :
         x_boost = 0;
         y_boost = -10;
@@ -271,7 +251,7 @@ __host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
 }
 
 // Has the GPU update cannonballs and transfers them to the CPU.
-__host__ void  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs) {
+__host__ void  update_cannonballs(cannonball_t* cpu_cannonballs, int num_cannonballs) {
   // cannonball_t* cpu_cannonballs = cannonballs;
   cannonball_t* gpu_cannonballs = NULL;
 
@@ -317,7 +297,7 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
 
       // Keep a minimum distance, otherwise we get
       // Is this necessary? Could be used for collisions
-      float combined_radius = CANNONBALL_RADIUS + stars[j].radius);
+      float combined_radius = CANNONBALL_RADIUS + stars[j].radius;
       if(dist < combined_radius) {
         dist = combined_radius;
       }

@@ -70,13 +70,14 @@ typedef struct client_list {
 } client_list_t;
 
 __host__ star_t* init_stars();
-__host__ spaceship_t* init_spaceship(spaceship_t* spaceship, int clientID);
+__host__ void free_stars();
+__host__ void init_spaceship(spaceship_t* spaceship, int clientID);
 __host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot);
 __host__ bool cannonball_in_bounds(cannonball_t* cannonball);
 __host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs);
-__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, int direction_boost);
-__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
-__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs);
+__host__ void update_spaceship(spaceship_t* spaceship, int direction_boost);
+__host__ void update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
+__global__ void update_cannonballs_gpu(cannonball_t* cpu_cannonballs, int num_cannonballs, star_t* stars, int num_stars);
 __host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);
 __host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius);
 

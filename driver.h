@@ -64,7 +64,7 @@ typedef struct client_list {
   char ip[INET_ADDRSTRLEN]; // IP address of client
   int port_num; // port of client
   int socket;
-  struct client_list * next; 
+  struct client_list * next;
 } client_list_t;
 
 __host__ star_t* init_stars();

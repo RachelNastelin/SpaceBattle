@@ -92,7 +92,7 @@ void * talk_to_client(void * args){
       send_to_clients->clientID0 = clients[i].clientID;
       send_to_clients->client_socket0 = clients[i].socket;
       send_to_clients->listen_port0 = clients[i].port_num;
-      send_to_clients->ship0 = update_spaceship(args->ship,
+      send_to_clients->ship0 = update_spaceship(client_info->ship,
 						client_info->direction);
       pthread_mutex_unlock(&send_to_clients_lock);
     } else if (i == 1){
@@ -102,14 +102,14 @@ void * talk_to_client(void * args){
       send_to_clients->clientID1 = clients[i].clientID;
       send_to_clients->client_socket1 = clients[i].socket;
       send_to_clients->listen_port1 = clients[i].port_num;
-      send_to_clients->ship1 = update_spaceship(args->ship,
+      send_to_clients->ship1 = update_spaceship(client_info->ship,
 						client_info->direction);
       pthread_mutex_unlock(&send_to_clients_lock);
     }
 
     // send information about both clients
     for(int j = 0; j < 2; j++){
-      write(client[i].socket, send_to_clients, sizeof(send_to_clients_t));
+      write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
     } // for
   } // while
 } // talk_to_client
@@ -117,13 +117,24 @@ void * talk_to_client(void * args){
 void stop_game(){
   server_rsp_t quit_msg;
   for(int i = 0; i < 2; i++){
-    quit_msg.clientID = clients[i].clientID;
-    quit_msg.continue_flag = false; // stops client threads
-    quit_msg.listen_port = clients[i].port_num;
-    // send quit_msg
+    if(i == 0){
+      quit_msg.clientID0 = clients[i].clientID;
+      quit_msg.continue_flag = false; // stops client threads
+      quit_msg.listen_port0 = clients[i].port_num;
+    }
+    else{
+      quit_msg.clientID1 = clients[i].clientID;
+      quit_msg.continue_flag = false; // stops client threads
+      quit_msg.listen_port1 = clients[i].port_num;
+    }
     write(clients[i].socket, &quit_msg, sizeof(server_rsp_t));
   }
   free(clients);
+  free(send_to_clients);
+  pthread_mutex_destroy(&send_to_clients_lock);
+  free(cannonballs);
+  pthread_mutex_destroy(&cannonballs_lock);
+
   exit(1);
 }
 

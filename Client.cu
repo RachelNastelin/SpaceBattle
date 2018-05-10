@@ -210,10 +210,10 @@ int main(int argc, char**argv){
   } // for
 
   gui_init();
-  star_t * stars = init_stars();
-  color_t star_color = {0,0,0,255};
-  gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
-  gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+  //star_t * stars = init_stars();
+  //color_t star_color = {0,0,0,255};
+  //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
+  // gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
 
   /********* SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
   // set up child socket, which will be constantly listening for incoming
@@ -245,6 +245,6 @@ int main(int argc, char**argv){
   // End
   free(msg_to_server);
   free(response);
-  free(stars);
+  //free(stars);
   close(listen_socket);
 } // main

@@ -49,7 +49,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 /***************************************FUNCTION SIGNATURES*********************************************/
-
+/*
 __host__ star_t* init_stars();
 __host__ spaceship_t* init_spaceship(spaceship_t* spaceship, int clientID);
 __host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot);
@@ -58,8 +58,9 @@ __host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs);
 __host__ spaceship_t* update_spaceship(spaceship_t* spaceship, int direction_boost);
 __host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
 __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs);
-bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star);
-bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius);
+__host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);
+__host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius);
+
 
 
 
@@ -187,6 +188,8 @@ __host__ bool cannonball_in_bounds(cannonball_t* cannonball) {
 
   return result;
 }
+
+// TO DO: a func that replaces a destroyed cannonball with a new cannonball in the array 
 
 // Add a cannonball to the field (Note: the caller must update the number of cannonballs!)
 __host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs) {
@@ -329,37 +332,31 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
   }
 }
 
-// To check for a collision with a star, make cannonball NULL
-// To check for a collision with a spaceship, make star NULL
-bool is_collision(spaceship_t* spaceship, cannonball_t* cannonballs) {
-  
-  if(cannonball == NULL){
-    // it's a star
-    if(check_for_collision_helper(spaceship->x_position, star->x_position, star->radius)){
-      // x is within bounds
-      if(check_for_collision_helper(spaceship->y_position, star->y_position, star->radius)){
-        // y is within bounds
-        return true;
-      } // check y
-    } // check x
-  } // star case
 
-  if(star == NULL){
-    // it's a cannonball
-    if(within_bounds(spaceship->x_position, star->x_position,
-                                  CANNONBALL_RADIUS)){
-      // x is within bounds
-      if(within_bounds(spaceship->y_position, star->y_position,
-                                    CANNONBALL_RADIUS)){
-        // y is within bounds
-        return true;
-      } // check y
-    } //check x
-  } // cannonball case
+__host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs) {
+  float ship_x = spaceship->x_position;
+  float ship_y = spaceship->y_position;
+
+  // Check for collisions with all stars
+  for (int i = 0; i < num_stars; i++) {
+    if (check_collision(ship_x, ship_y, SPACESHIP_RADIUS, stars[i].x_position, stars[i].y_position, stars[i].radius)) {
+      return true;
+    }
+  }
+  // Check for collisions with all cannonballs
+  for (int i = 0; i < num_cannonballs; i++) {
+    if (check_collision(ship_x, ship_y, SPACESHIP_RADIUS,
+                        cannonballs[i].x_position, cannonballs[i].y_position, CANNONBALL_RADIUS)) {
+      return true;
+    }
+  }
+  // If it hasn't found a collision thusfar, then there is none
+  return false;
 }
+   
 
 // Is there a collision here?
-bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius){
+__host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius) {
   // Compute the distance between each obj in each dimension
   float x_diff = obj1_x - obj2_x;
   float y_diff = obj1_y - obj2_y;
@@ -368,42 +365,39 @@ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x
   float dist = sqrt(x_diff * x_diff + y_diff * y_diff);
 
   // If the distance between the objects is <= their combined radius, then there is a collision
-  if(dist <= obj1_radius + obj2_radius) {
+  if (dist <= obj1_radius + obj2_radius) {
     return true;
   } else {
     return false;
   }
 }
-  
-
-
-
-  
-  if(ship_pos == obstacle_pos){return true;}
-  if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
-    if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){
-      // ship's left bound is on the left of the obstacle's right bound
-      return true;
-    }
-  } // ship on right
-
-  if(ship_pos < obstacle_pos){ // the ship is on the left of the obstacle
-    if((ship_pos + STARSHIP_RADIUS) >= (obstacle_pos - obstacle_radius)){
-      // ship's right bound is on the right of the obstacle's left bound
-      return true;
-    }
-  } // ship on left
-  return false;
-} // within_bounds
 
 
 
 
 
 
+// Pay no attention to the code behind the curtain!
+
+/***************************************\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
+\|||||||||||||||||||||||||||||||||||||||/
+/|||||||||||||||||||||||||||||||||||||||\
 
 
-/*
+// Old gpu lab code for posterity I guess
+
 int main(int argc, char** argv) {
   // Initialize the graphical interface
   gui_init();

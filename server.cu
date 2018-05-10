@@ -38,16 +38,14 @@ typedef struct talk_to_client_args {
 client_list_t * clients;
 int client_count;
 
-server_rsp * send_to_clients;
+server_rsp_t * send_to_clients;
 pthread_mutex_t send_to_clients_lock;
-pthread_mutex_init(&send_to_clients_lock, NULL);
 
 cannonball_t * cannonballs;
 pthread_mutex_t cannonballs_lock;
-pthread_mutex_init(&cannonballs_lock, NULL);
 int num_cannonballs;
 
-/**************************** FUNCTIONS **************************************/
+/**************************** FUNCTIONS ***************************************/
 /*************************** SIGNATURES ***************************************/
 void stop_game();
 void remove_client (int port);
@@ -75,8 +73,7 @@ void * talk_to_client(void * args){
 	cannonballs = (cannonball_t*)malloc(sizeof(cannonball_t));
       } // if
       pthread_mutex_lock(&cannonballs_lock);
-      add_cannonball(client_info->ship, cannonballs, num_cannonballs,
-		     client_info->direction);
+      add_cannonball(cannonballs, num_cannonballs);
       pthread_mutex_unlock(&cannonballs_lock);
       num_cannonballs++;
     } // if a cannonball was shot
@@ -163,6 +160,7 @@ void end_game (){
 /***************************** MAIN *******************************************/
 
 int main() {
+  /*================ SET UP: PART 1, SET UP SERVER SOCKET ====================*/
   // Set up a socket
   int s = socket(AF_INET, SOCK_STREAM, 0);
   if(s == -1) {
@@ -189,45 +187,49 @@ int main() {
     perror("listen failed");
     exit(2);
   }
+  
 
+  /*=================== SET UP: PART 2, SET UP GLOBALS ======================*/
   client_count = 0;
   // set up the list of connected clients
   clients = (client_list_t*)malloc(sizeof(client_list_t));
   int client_socket;
   server_rsp_t * response;
+  pthread_mutex_init(&(send_to_clients_lock), NULL);
+  pthread_mutex_init(&(cannonballs_lock), NULL);
 
   
-  // Repeatedly accept connections
+  /*====================== ACCEPT CLIENT CONNECTIONS ========================*/
+  // Accept 2 connections
   while(client_count <= 2) {
     // Accept a client connection
     struct sockaddr_in client_addr;
     socklen_t client_addr_length = sizeof(struct sockaddr_in);
     client_socket = accept(s, (struct sockaddr*)&client_addr,
                            &client_addr_length);
-    
     if(client_socket == -1) {
       perror("accept failed");
       exit(2);
     }
+
+    /* STORE SOCKET AND SHIP FOR NEW CLIENT */
     clients[client_count - 1].socket = client_socket;
-    clients[client_count - 1].ship = init_spaceship(client_count);
-    // read a message from the client
+    
+    spaceship_t * ship = (spaceship_t*)malloc(sizeof(spaceship_t));
+    clients[client_count - 1].ship = init_spaceship(ship, client_count);
+    
+    /* LISTEN TO CLIENT */
     msg_to_server_t message;
     if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){
       // if the server couldn't read from the client, exit the game
       remove_client(message.listen_port);
     }
 
-    printf("\n/-----------------------------------------------------------/\n");
-
+    /* STORE OTHER INFORMATION ABOUT NEW CLIENT */
     // store the client's ip address 
     char ipstr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, ipstr, INET_ADDRSTRLEN);
-   
-    // set up the response to the client
-    response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
-
-    // add the new client to our list of clients
+    
     client_list_t* new_client = (client_list_t*)malloc(sizeof(client_list_t));
     new_client->clientID = client_count;
     strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
@@ -236,10 +238,15 @@ int main() {
     clients = new_client;
     client_count++;
 
+    
+    /*============== SET UP COMMUNICATION WITH NEW CLIENT ====================*/
+    // set up the response to the client
+    response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
+   
     // make new thread to communicate with client
     pthread_t new_client_thread;
-    talk_to_client_args_t * args = (talk_to_client_args_t*)malloc(
-								  sizeof(talk_to_client_args_t));
+    talk_to_client_args_t * args = (talk_to_client_args_t*)
+      malloc(sizeof(talk_to_client_args_t));
     args->port = new_client->port_num;
     args->socket = client_socket;
     args->clientID = new_client->clientID;
@@ -258,8 +265,6 @@ int main() {
     } // else
   } // while
   
-  // respond to the client
-  write(client_socket, response, sizeof(server_rsp_t));
   // close the socket
   close(client_socket);
 

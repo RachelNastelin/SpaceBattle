@@ -1,4 +1,4 @@
-#include "gui.h"
+#include "board.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -96,7 +96,7 @@ void gui_set_pixel(int x, int y, color_t color) {
 }
 
 // Add a circle to the image data
-void gui_draw_circle(int center_x, int center_y, float radius, color_t color) {
+void gui_draw_star(int center_x, int center_y, float radius, color_t color) {
   // Loop over one quadrant of the circle's points
   // Based on method from http://groups.csail.mit.edu/graphics/classes/6.837/F98/Lecture6/circle.html
   for(int x=0; x<=radius; x++) {

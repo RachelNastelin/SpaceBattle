@@ -209,8 +209,12 @@ int main(int argc, char**argv){
     connections[i] = NOT_IN_USE;
   } // for
 
-  //creates threads here
-  
+  gui_init();
+  star_t * stars = init_stars();
+  color_t star_color = {0,0,0,255};
+  gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
+  gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+
   /********* SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
   // set up child socket, which will be constantly listening for incoming
   //  connections
@@ -225,7 +229,15 @@ int main(int argc, char**argv){
   // edit our globals to take into account information gotten from the server
   global_clientID = response->clientID;
   msg_to_server->clientID = global_clientID;
+
+  /************************* DISPLAY BOARD **********************************/
+  gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
+  gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
+
+
+  // End
   free(msg_to_server);
   free(response);
+  free(stars);
   close(listen_socket);
 } // main

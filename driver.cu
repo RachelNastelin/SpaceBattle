@@ -52,12 +52,12 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 __host__ star_t* init_stars();
 __host__ spaceship_t* init_spaceship(spaceship_t* spaceship, int clientID);
-__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int cannonball_direction);
+__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot);
 __host__ bool cannonball_in_bounds(cannonball_t* cannonball);
 __host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs);
-__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, star_t* stars, int direction_boost);
-__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
-__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, star_t* stars, int num_cannonballs, int num_stars);
+__host__ spaceship_t* update_spaceship(spaceship_t* spaceship, int direction_boost);
+__host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
+__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs);
 bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star);
 bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius);
 
@@ -77,6 +77,7 @@ __device__ __host__ float star_radius(float mass) {
 }
 */
 /***************************************GLOBAL VARIABLES*********************************************/
+// These variables should never be modified beyond their initialized values.
 star_t* stars;
 int num_stars;
 
@@ -85,7 +86,7 @@ int num_stars;
 
 // Initialize an array of star_t-s representing the stars on the playing field
 __host__ star_t* init_stars() {
-  stars = (star_t*) malloc(sizeof(star_t) * 2);
+  stars = (star_t*) malloc(sizeof(star_t) * 2); // Initializing the global array "stars"
 
   // First star
   return_stars[0]->mass = 400;
@@ -98,7 +99,7 @@ __host__ star_t* init_stars() {
   return_stars[1]->x_position = 2*(SCREEN_WIDTH/3);
   return_stars[1]->y_position = SCREEN_WIDTH/2;
 
-  num_stars = 2;
+  num_stars = 2; // Inititializing the global int "num_stars"
 
   return stars;
 }
@@ -128,7 +129,7 @@ __host__ void init_spaceship(spaceship_t* spaceship, int clientID) {
 }
 
 // Initializes a cannonball near the user who shoots it
-__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int cannonball_direction) {
+__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot) {
   cannonball_t* cannonball = (cannonball_t*) malloc(sizeof(cannonball_t));
 
   float cannonball_x_pos;
@@ -330,7 +331,7 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
 
 // To check for a collision with a star, make cannonball NULL
 // To check for a collision with a spaceship, make star NULL
-bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star){
+bool is_collision(spaceship_t* spaceship, cannonball_t* cannonballs) {
   if(cannonball == NULL){
     // it's a star
     if(check_for_collision_helper(spaceship->x_position, star->x_position, star->radius)){
@@ -357,7 +358,7 @@ bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_
 }
 
 // check_for_collision helper
-bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius){
+bool check_collision(int ship_pos, int obstacle_pos, int obstacle_radius){
   if(ship_pos == obstacle_pos){return true;}
   if(ship_pos > obstacle_pos){ // the ship is on the right of the obstacle
     if((ship_pos - STARSHIP_RADIUS) <= (obstacle_pos + obstacle_radius)){

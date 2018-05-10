@@ -77,7 +77,7 @@ __host__ void add_cannonball(cannonball_t* cannonballs, int num_cannonballs);
 __host__ spaceship_t* update_spaceship(spaceship_t* spaceship, int direction_boost);
 __host__ cannonball_t*  update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
 __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs);
-bool check_for_collision(spaceship_t* spaceship, cannonball_t* cannonball, star_t* star);
-bool within_bounds(int ship_pos, int obstacle_pos, int obstacle_radius);
+__host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);
+__host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius);
 
 #endif

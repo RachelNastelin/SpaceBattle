@@ -1,3 +1,13 @@
+========= TODO ==========
+1. GUI stuff: (Caelin)
+        - Call update_display more often so you don't pick up the background when moving the window
+        - Linker error with stars in Client.cu
+        - Make sure that when you try to draw something, it actually shows up
+2. Server and Driver: (Will)
+        - Fix mallocing and freeing calls in driver.cu 
+        - Make sure server calls driver functions correctly
+3. Make it possible for users to quit (Rachel)
+
 ========= Current Status ==========
 UI: Opaque white window pops up, but when dragged, two windows pick up the background from each other. 
 Driver: Written, compiles, working on collision (?)
@@ -9,7 +19,5 @@ Client: Written, compiles, calls board functions when appropriate. MISSING USER 
 
 
 ===== Change before turning in =====
-Driver: 
 Server: Get rid of print statement when a new client connects because the
         clientIDs are wrong and can't be fixed
-Client:

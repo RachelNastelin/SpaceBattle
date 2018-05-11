@@ -69,7 +69,7 @@ void gui_init() {
   
   // Clear the bitmap the GUI displays
   memset(bitmap, 0, sizeof(color_t) * SCREEN_WIDTH * SCREEN_HEIGHT);
-  gui_update_display();
+  gui_update_display(); // Call often to ensure that display changes
   SDL_RenderPresent(sdlrenderer);
 
 }

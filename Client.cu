@@ -37,6 +37,7 @@ int global_listen_port;
 int global_clientID;
 bool global_continue_flag; // True when the client has not quit
 pthread_mutex_t connections_lock = PTHREAD_MUTEX_INITIALIZER;
+//SDL_Renderer* renderer = NULL;
 
 /*********************** FUNCTION SIGNATURES *********************************/
 
@@ -241,6 +242,9 @@ int main(int argc, char**argv){
   gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
   gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
 
+  //SDL_RenderDrawLine(renderer, 320, 200, 300, 240);
+  //SDL_RenderDrawLine(renderer, 300, 240, 340, 240);
+                
 
   // End
   free(msg_to_server);

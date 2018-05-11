@@ -34,9 +34,9 @@
 
 // Directions
 #define UP 1
-#define DOWN -1
-#define RIGHT 2
-#define LEFT -2
+#define DOWN 2
+#define RIGHT 3
+#define LEFT 4
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
@@ -92,8 +92,8 @@ __host__ void free_stars() {
 
 // Places the user's spaceship on oneside of the field, depending on whether the user is the first
 // or second client to connect to the server
-__host__ spaceship_t * init_spaceship(spaceship_t* spaceship, int clientID) {
-  //spaceship_t* spaceship = (spaceship_t*) malloc(sizeof(spaceship_t));
+__host__ spaceship_t * init_spaceship(int clientID) {
+  spaceship_t* spaceship = (spaceship_t*) malloc(sizeof(spaceship_t));
 
   spaceship->clientID = clientID;
 
@@ -110,10 +110,23 @@ __host__ spaceship_t * init_spaceship(spaceship_t* spaceship, int clientID) {
   return spaceship;
 }
 
-// Initializes a cannonball near the user who shoots it
-__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot) {
-  cannonball_t* new_cannonball = (cannonball_t*) malloc(sizeof(cannonball_t));
+__host__ void free_spaceship(spaceship_t* spaceship) {
+  free(spaceship);
+}
 
+__host__ cannonball_t* init_cannonballs() {
+  cannonball_t* cannonballs = (cannonball_t*) malloc(sizeof(cannonball_t));
+
+  return cannonballs;
+}
+
+__host__ void free_cannonballs(cannonball_t* cannonballs) {
+  free(cannonballs);
+}
+
+__host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot) {
+  bool result;
+  
   float cannonball_x_pos;
   float cannonball_y_pos;
   float cannonball_x_vel;
@@ -146,51 +159,77 @@ __host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_sho
       break;
   }
 
-  new_cannonball->x_position = cannonball_x_pos;
-  new_cannonball->y_position = cannonball_y_pos;
-  new_cannonball->x_velocity = cannonball_x_vel;
-  new_cannonball->y_velocity = cannonball_y_vel;
-
-  return new_cannonball;
-}
-
-// Check if the given cannonball is in the bounds of the field.
-// We only add the cannonball to the field if it is in bounds.
-__host__ bool cannonball_in_bounds(cannonball_t* new_cannonball) {
-  bool result;
-
-  // If there is an edge collision
-  if (new_cannonball->x_position < 0 ||
-      new_cannonball->y_position >= SCREEN_WIDTH ||
-      new_cannonball->x_position < 0 ||
-      new_cannonball->y_position >= SCREEN_HEIGHT) {
-    
-    free(new_cannonball); // We won't be using cannonball, so we can free it.
-    result = false;
-  } else {
-    
+  // Is this cannonball within the bounds of the screen?
+  if (cannonball_x_pos > 0 &&
+      cannonball_x_pos <= SCREEN_WIDTH &&
+      cannonball_y_pos > 0 &&
+      cannonball_y_pos <= SCREEN_HEIGHT) {
     result = true;
+  }
+  else {
+    result = false;
   }
 
   return result;
 }
 
-// TO DO: a func that replaces a destroyed cannonball with a new cannonball in the array 
-
 // Add a cannonball to the field (Note: the caller must update the number of cannonballs!)
-__host__ void add_cannonball(cannonball_t* new_cannonball, cannonball_t* cannonballs, int num_cannonballs) {
-  //cannonballs = (cannonball_t*)realloc(cannonball, (num_cannonballs + 1) * sizeof(star_t));
-  
-  cannonballs[num_cannonballs].x_position = new_cannonball->x_position;
-  cannonballs[num_cannonballs].y_position = new_cannonball->y_position;
-  cannonballs[num_cannonballs].x_velocity = new_cannonball->x_velocity;
-  cannonballs[num_cannonballs].y_velocity = new_cannonball->y_velocity;
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs) {
+  float cannonball_x_pos;
+  float cannonball_y_pos;
+  float cannonball_x_vel;
+  float cannonball_y_vel;
 
-  free(new_cannonball);
+  switch(direction_shot) {
+    case UP :
+      cannonball_x_pos = spaceship->x_position;
+      cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;
+      cannonball_x_vel = spaceship->x_velocity;
+      cannonball_y_vel = spaceship->y_velocity - CANNONBALL_EXIT_VEL;
+      break;
+    case DOWN :
+      cannonball_x_pos = spaceship->x_position;
+      cannonball_y_pos = spaceship->y_position + CANNONBALL_EXIT_POS;
+      cannonball_x_vel = spaceship->x_velocity;
+      cannonball_y_vel = spaceship->y_velocity + CANNONBALL_EXIT_VEL;
+      break;
+    case RIGHT :
+      cannonball_x_pos = spaceship->x_position + CANNONBALL_EXIT_POS;
+      cannonball_y_pos = spaceship->y_position;
+      cannonball_x_vel = spaceship->x_velocity + CANNONBALL_EXIT_VEL;
+      cannonball_y_vel = spaceship->y_velocity;
+      break;
+    case LEFT :
+      cannonball_x_pos = spaceship->x_position - CANNONBALL_EXIT_POS;
+      cannonball_y_pos = spaceship->y_position;
+      cannonball_x_vel = spaceship->x_velocity - CANNONBALL_EXIT_VEL;
+      cannonball_y_vel = spaceship->y_velocity;
+      break;
+  }
+
+  // Only add the cannonball if it will be within the bounds of the screen
+  /* This has been moved to func 'is_cannonball_in_bounds'
+  if (cannonball_x_pos > 0 &&
+      cannonball_x_pos <= SCREEN_WIDTH &&
+      cannonball_y_pos > 0 &&
+      cannonball_y_pos <= SCREEN_HEIGHT) {
+  */
+
+    // Reallocate memory to make space for the new cannonball
+  cannonballs = (cannonball_t*)realloc(cannonball, num_cannonballs * sizeof(cannonball_t));
+  
+    cannonballs[num_cannonballs].x_position = cannonball_x_pos;
+    cannonballs[num_cannonballs].y_position = cannonball_y_pos;
+    cannonballs[num_cannonballs].x_velocity = cannonball_x_vel;
+    cannonballs[num_cannonballs].y_velocity = cannonball_y_vel;
+  }
+
+  return cannonballs;
 }
 
+
 // Update position and velocity of a spaceship
-__host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_boost) {
+__host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
   spaceship->x_position += spaceship->x_velocity * DT;
   spaceship->y_position += spaceship->y_velocity * DT;
 
@@ -236,6 +275,7 @@ __host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_bo
         y_boost = 0;
         break;
     }
+    
     float x_acceleration = -x_diff * G * CANNONBALL_MASS / (dist * dist) + x_boost;
     float y_acceleration = -y_diff * G * CANNONBALL_MASS / (dist * dist) + y_boost;
 
@@ -249,17 +289,15 @@ __host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_bo
     if(spaceship->y_position < 0 && spaceship->y_velocity < 0) spaceship->y_velocity *= -0.5;
     if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0) spaceship->y_velocity *= -0.5;
   }
-  return spaceship;
 }
 
 // Has the GPU update cannonballs and transfers them to the CPU.
 __host__ void  update_cannonballs(cannonball_t* cpu_cannonballs, int num_cannonballs) {
-  // cannonball_t* cpu_cannonballs = cannonballs;
   cannonball_t* gpu_cannonballs = NULL;
 
   // Realloc from cpu to gpu
-  gpuErrchk(cudaMalloc(&gpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs + 1))); //Why do we add 1 here?? We're not adding..
-  gpuErrchk(cudaMemcpy(gpu_cannonballs, cpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs + 1), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMalloc(&gpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs))); 
+  gpuErrchk(cudaMemcpy(gpu_cannonballs, cpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs), cudaMemcpyHostToDevice));
 
   int blocks = (num_cannonballs + THREADS - 1) / THREADS;
 
@@ -360,6 +398,14 @@ __host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, flo
     return false;
   }
 }
+
+
+
+
+
+
+
+
 
 
 

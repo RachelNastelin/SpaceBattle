@@ -85,11 +85,13 @@ typedef struct client_list {
 
 __host__ star_t* init_stars();
 __host__ void free_stars();
-__host__ spaceship_t * init_spaceship(spaceship_t* spaceship, int clientID);
-__host__ cannonball_t* init_cannonball(spaceship_t* spaceship, int direction_shot);
-__host__ bool cannonball_in_bounds(cannonball_t* cannonball);
-__host__ void add_cannonball(cannonball_t* new_cannonball, cannonball_t* cannonballs, int num_cannonballs);
-__host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_boost);
+__host__ spaceship_t * init_spaceship(int clientID);
+__host__ void free_spaceship(spaceship_t* spaceship);
+__host__ cannonball_t* init_cannonballs();
+__host__ void free_cannonballs(cannonball_t* cannonballs);
+__host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot);
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);
+__host__ void update_spaceship(spaceship_t* spaceship, int direction_boost);
 __host__ void update_cannonballs(cannonball_t* cannonballs, int num_cannonballs);
 __global__ void update_cannonballs_gpu(cannonball_t* cpu_cannonballs, int num_cannonballs, star_t* stars, int num_stars);
 __host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs);

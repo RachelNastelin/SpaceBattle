@@ -74,14 +74,17 @@ void * talk_to_client(void * args){
     // call functions to handle information
     if(client_info->cannonball_shot){
       if(cannonballs == NULL){
-	cannonballs = (cannonball_t*)malloc(sizeof(cannonball_t));
+	cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
       } // if
-      cannonball_t* new_cannonball = init_cannonball(client_info->ship,
-                                                     client_info->direction);
+      // will the new cannonball be in the bounds of the screen?
+      if (is_cannonball_in_bounds(client_info->ship, client_info->direction)) {
+      // W! cannonball_t* new_cannonball = init_cannonball(client_info->ship, client_info->direction);
       pthread_mutex_lock(&cannonballs_lock);
-      add_cannonball(new_cannonball, cannonballs, num_cannonballs);
+      num_cannonballs += 1; 
+      add_cannonball(client_info->ship, cannonballs, num_cannonballs);
       pthread_mutex_unlock(&cannonballs_lock);
-      num_cannonballs++;
+      }
+      // W! num_cannonballs++;
     } // if a cannonball was shot
     
     // put information together with information about other client
@@ -105,8 +108,9 @@ void * talk_to_client(void * args){
       send_to_clients->clientID1 = clients[i].clientID;
       send_to_clients->client_socket1 = clients[i].socket;
       send_to_clients->listen_port1 = clients[i].port_num;
-      send_to_clients->ship1 = update_spaceship(client_info->ship,
-						client_info->direction);
+      // W! send_to_clients->ship1 = update_spaceship(client_info->ship, client_info->direction);
+      update_spaceship(client_info->ship, client_info->direction);
+      send_to_clients->ship0 = client_info->ship;
       pthread_mutex_unlock(&send_to_clients_lock);
     }
 
@@ -136,7 +140,7 @@ void stop_game(){
   free(clients);
   free(send_to_clients);
   pthread_mutex_destroy(&send_to_clients_lock);
-  free(cannonballs);
+  free_cannonballs(cannonballs); // W! free(cannonballs);
   pthread_mutex_destroy(&cannonballs_lock);
 
   exit(1);
@@ -159,7 +163,7 @@ void quit_client (int port){
 
 // called when the game ends, which is when at least one player has died
 void end_game (){
-  // TODO: announce winner
+  // TODO: announce winner, call free_'...' functions
   //server_rsp_t quit_msg;
   stop_game();
 } // end_game
@@ -221,8 +225,8 @@ int main() {
     /* STORE SOCKET AND SHIP FOR NEW CLIENT */
     clients[client_count - 1].socket = client_socket;
     
-    spaceship_t * ship = (spaceship_t*)malloc(sizeof(spaceship_t));
-    clients[client_count - 1].ship = init_spaceship(ship, client_count);
+    // W! spaceship_t * ship = (spaceship_t*)malloc(sizeof(spaceship_t));
+    clients[client_count - 1].ship = init_spaceship(client_count);
     
     /* LISTEN TO CLIENT */
     msg_to_server_t message;
@@ -254,7 +258,8 @@ int main() {
     args->port = new_client->port_num;
     args->socket = client_socket;
     args->clientID = new_client->clientID;
-    args->ship = clients[client_count - 1].ship; 
+    args->ship = clients[client_count - 1].ship;
+    // Thread talks to indiviual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
     
     // end game if necessary

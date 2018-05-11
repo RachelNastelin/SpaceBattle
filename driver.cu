@@ -92,7 +92,7 @@ __host__ void free_stars() {
 
 // Places the user's spaceship on oneside of the field, depending on whether the user is the first
 // or second client to connect to the server
-__host__ void init_spaceship(spaceship_t* spaceship, int clientID) {
+__host__ spaceship_t * init_spaceship(spaceship_t* spaceship, int clientID) {
   //spaceship_t* spaceship = (spaceship_t*) malloc(sizeof(spaceship_t));
 
   spaceship->clientID = clientID;
@@ -107,6 +107,7 @@ __host__ void init_spaceship(spaceship_t* spaceship, int clientID) {
       spaceship->y_position = 4*(SCREEN_HEIGHT/5);
       break;
   }
+  return spaceship;
 }
 
 // Initializes a cannonball near the user who shoots it
@@ -189,7 +190,7 @@ __host__ void add_cannonball(cannonball_t* new_cannonball, cannonball_t* cannonb
 }
 
 // Update position and velocity of a spaceship
-__host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
+__host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_boost) {
   spaceship->x_position += spaceship->x_velocity * DT;
   spaceship->y_position += spaceship->y_velocity * DT;
 
@@ -248,6 +249,7 @@ __host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
     if(spaceship->y_position < 0 && spaceship->y_velocity < 0) spaceship->y_velocity *= -0.5;
     if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0) spaceship->y_velocity *= -0.5;
   }
+  return spaceship;
 }
 
 // Has the GPU update cannonballs and transfers them to the CPU.

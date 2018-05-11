@@ -1,4 +1,4 @@
- #include <pthread.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,14 +15,14 @@
 #include "board.h"
 #include "driver.h"
 
-#define LOST_CONNECTION -2 // clients that the server lost its connection with
+#define LOST_CONNECTION -2 //clients that the server lost its connection with
 #define SERVER_PORT 6664
 // directions, used for user input
 #define UP 1
 #define DOWN 2
 #define RIGHT 3
 #define LEFT 4
-/********************************* STRUCTS **********************************/
+/********************************* STRUCTS *********************************/
 typedef struct talk_to_client_args {
   int clientID;
   int port;
@@ -32,7 +32,7 @@ typedef struct talk_to_client_args {
   bool cannonball_shot; //TODO: initialize this somewhere
 } talk_to_client_args_t;
 
-/****************************** GLOBALS **************************************/
+/****************************** GLOBALS ************************************/
 
 // GLOBAL CLIENT LIST
 client_list_t * clients;
@@ -45,14 +45,14 @@ cannonball_t * cannonballs;
 pthread_mutex_t cannonballs_lock;
 int num_cannonballs;
 
-/**************************** FUNCTIONS ***************************************/
-/*************************** SIGNATURES ***************************************/
+/**************************** FUNCTIONS ************************************/
+/*************************** SIGNATURES ************************************/
 void stop_game();
 void remove_client (int port);
 void quit_client (int port);
 void end_game ();
 
-/*************************** THREAD FUNCTIONS *********************************/
+/*************************** THREAD FUNCTIONS ******************************/
 void * talk_to_client(void * args){
   talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
   //client_info->clientID = client_count;
@@ -67,7 +67,8 @@ void * talk_to_client(void * args){
     } // for
     
     // listen for information from client
-    msg_to_server * response = (msg_to_server*)malloc(sizeof(msg_to_server_t));
+    msg_to_server * response = (msg_to_server*)
+      malloc(sizeof(msg_to_server_t));
     read(client_info->socket, response, sizeof(msg_to_server_t));
 
     // call functions to handle information
@@ -75,8 +76,10 @@ void * talk_to_client(void * args){
       if(cannonballs == NULL){
 	cannonballs = (cannonball_t*)malloc(sizeof(cannonball_t));
       } // if
+      cannonball_t* new_cannonball = init_cannonball(client_info->ship,
+                                                     client_info->direction);
       pthread_mutex_lock(&cannonballs_lock);
-      add_cannonball(cannonballs, num_cannonballs);
+      add_cannonball(new_cannonball, cannonballs, num_cannonballs);
       pthread_mutex_unlock(&cannonballs_lock);
       num_cannonballs++;
     } // if a cannonball was shot
@@ -114,7 +117,7 @@ void * talk_to_client(void * args){
     } // for
   } // while
 } // talk_to_client
-/************************* END GAME FUNCTIONS *********************************/
+/************************* END GAME FUNCTIONS ******************************/
 void stop_game(){
   server_rsp_t quit_msg;
   for(int i = 0; i < 2; i++){
@@ -129,7 +132,7 @@ void stop_game(){
       quit_msg.listen_port1 = clients[i].port_num;
     }
     write(clients[i].socket, &quit_msg, sizeof(server_rsp_t));
-  }
+  } // for
   free(clients);
   free(send_to_clients);
   pthread_mutex_destroy(&send_to_clients_lock);
@@ -137,14 +140,14 @@ void stop_game(){
   pthread_mutex_destroy(&cannonballs_lock);
 
   exit(1);
-}
+} // stop_game
 
 // called when a client cannot be communicated with.
 void remove_client (int port) {
   // TODO: change this to whatever print function we're using for the UI
   printf("Your opponent can't connect to the server.\n");
   stop_game();
-}
+} // remove_client
 
 // called when a client quits before the game finishes
 void quit_client (int port){
@@ -161,10 +164,10 @@ void end_game (){
   stop_game();
 } // end_game
 
-/***************************** MAIN *******************************************/
+/***************************** MAIN ****************************************/
 
 int main() {
-  /*================ SET UP: PART 1, SET UP SERVER SOCKET ====================*/
+  /*============== SET UP: PART 1, SET UP SERVER SOCKET ===================*/
   // Set up a socket
   int s = socket(AF_INET, SOCK_STREAM, 0);
   if(s == -1) {
@@ -193,7 +196,7 @@ int main() {
   }
   
 
-  /*=================== SET UP: PART 2, SET UP GLOBALS ======================*/
+  /*=================== SET UP: PART 2, SET UP GLOBALS ====================*/
   client_count = 0;
   // set up the list of connected clients
   clients = (client_list_t*)malloc(sizeof(client_list_t));
@@ -202,7 +205,7 @@ int main() {
   pthread_mutex_init(&(cannonballs_lock), NULL);
 
   
-  /*====================== ACCEPT CLIENT CONNECTIONS ========================*/
+  /*====================== ACCEPT CLIENT CONNECTIONS ======================*/
   // Accept 2 connections
   while(client_count <= 2) {
     // Accept a client connection
@@ -233,7 +236,8 @@ int main() {
     char ipstr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, ipstr, INET_ADDRSTRLEN);
     
-    client_list_t* new_client = (client_list_t*)malloc(sizeof(client_list_t));
+    client_list_t* new_client = (client_list_t*)
+      malloc(sizeof(client_list_t));
     new_client->clientID = client_count;
     strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
     new_client->port_num = message.listen_port;
@@ -242,7 +246,7 @@ int main() {
     client_count++;
 
     
-    /*============= SET UP COMMUNICATION WITH NEW CLIENT ====================*/ 
+    /*============ SET UP COMMUNICATION WITH NEW CLIENT ==================*/ 
     // make new thread to communicate with client
     pthread_t new_client_thread;
     talk_to_client_args_t * args = (talk_to_client_args_t*)

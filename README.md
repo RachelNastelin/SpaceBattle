@@ -35,7 +35,7 @@ To play the game, the user will start the server in terminal, then in another ta
 player will then start the game.
 
 ## 3. Topics from Class Used
-Concurrency – the 6 threads described above
+Concurrency – the 6 threads described above\
 Networking – the distributed system/network described above
 
 ## 4. Implementation Plans

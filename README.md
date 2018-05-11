@@ -38,7 +38,7 @@ player will then start the game.
 Concurrency – the 6 threads described above\
 Networking – the distributed system/network described above
 
-## 4. Implementation Plans
+## 4. Implementation Plan
 We plan to implement our project in roughly this order:
  - The client side, to be done in the first week (4/22 – 4/28). We will know that this is done when we can connect the client 
    to a dummy server, start the game, draw the board, move around on the board, shoot cannonballs (which won’t move after 

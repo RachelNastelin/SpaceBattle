@@ -1,14 +1,9 @@
-======== Breakdown of Work =======
-Will: Driver, computations for server
-Rachel: Server, communicating with clients
-Caelin: Client, user input, UI stuff(?)
-
-
 ========= Current Status ==========
-Driver: Written, ** doesn't compile!! ** Working on collision (?)
+UI: Opaque white window pops up, but when dragged, two windows pick up the background from each other. 
+Driver: Written, compiles, working on collision (?)
 Server: Server can connect to the clients and send information back and forth. Calls driver functions 
         when appropriate. 
-Client: Written, compiles, calls board functions when appropriate. 
+Client: Written, compiles, calls board functions when appropriate. MISSING USER INPUT, DO THIS NEXT
 
 -quitting/continue_flag may be a problem later? (Neither is fully implemented... we should only need one)
 

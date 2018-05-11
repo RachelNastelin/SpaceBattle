@@ -1,9 +1,11 @@
-Project Proposal
+#Project Proposal
 
-1. The problem: we want to play a spaceship battle game where we can shoot cannonballs at another player and avoid stars with 
+##1. 
+The problem: we want to play a spaceship battle game where we can shoot cannonballs at another player and avoid stars with 
 gravitational pulls. There isn’t a game like that, so we want to make one. 
 
-2. We’re going to use concurrency to quickly and efficiently update the positions of the spaceships and cannonballs. Instead
+##2. 
+We’re going to use concurrency to quickly and efficiently update the positions of the spaceships and cannonballs. Instead
 of using pthread and locks, we’re going to use kernel calls to run the threads for the GPU. We will use pthread and locks for 
 other tasks. We plan to make about 6 threads, with more threads once more than 1 player is playing:
  - 1 main thread to start the game
@@ -32,10 +34,12 @@ These will be handled on the server side:
 To play the game, the user will start the server in terminal, then in another tab of terminal, will start the game. The other 
 player will then start the game.
 
-3. Concurrency – the 6 threads described above
+##3. 
+Concurrency – the 6 threads described above
 Networking – the distributed system/network described above
 
-4. We plan to implement our project in roughly this order:
+##4. 
+We plan to implement our project in roughly this order:
  - The client side, to be done in the first week (4/22 – 4/28). We will know that this is done when we can connect the client 
    to a dummy server, start the game, draw the board, move around on the board, shoot cannonballs (which won’t move after 
    being shot), and quit the game.

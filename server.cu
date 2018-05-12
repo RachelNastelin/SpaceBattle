@@ -44,6 +44,7 @@ pthread_mutex_t send_to_clients_lock;
 cannonball_t * cannonballs;
 pthread_mutex_t cannonballs_lock;
 int num_cannonballs;
+bool continue_flag;
 
 /**************************** FUNCTIONS ************************************/
 /*************************** SIGNATURES ************************************/
@@ -58,7 +59,7 @@ void * talk_to_client(void * args){
   //client_info->clientID = client_count;
 
   
-  while(true){
+  while(continue_flag){
     // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
       if(clients[i].socket == LOST_CONNECTION){
@@ -78,11 +79,11 @@ void * talk_to_client(void * args){
       } // if
       // will the new cannonball be in the bounds of the screen?
       if (is_cannonball_in_bounds(client_info->ship, client_info->direction)) {
-      // W! cannonball_t* new_cannonball = init_cannonball(client_info->ship, client_info->direction);
-      pthread_mutex_lock(&cannonballs_lock);
-      num_cannonballs += 1; 
-      add_cannonball(client_info->ship, cannonballs, num_cannonballs);
-      pthread_mutex_unlock(&cannonballs_lock);
+	// W! cannonball_t* new_cannonball = init_cannonball(client_info->ship, client_info->direction);
+	pthread_mutex_lock(&cannonballs_lock);
+	num_cannonballs += 1; 
+	add_cannonball(client_info->ship, cannonballs, num_cannonballs);
+	pthread_mutex_unlock(&cannonballs_lock);
       }
       // W! num_cannonballs++;
     } // if a cannonball was shot
@@ -239,13 +240,18 @@ int main() {
     // store the client's ip address 
     char ipstr[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, ipstr, INET_ADDRSTRLEN);
-    
+
+    // Tell the client about itself
     client_list_t* new_client = (client_list_t*)
       malloc(sizeof(client_list_t));
-    new_client->clientID = client_count;
-    strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN);
-    new_client->port_num = message.listen_port;
-    new_client->next = clients;
+    new_client->clientID = client_count; // clientID
+    strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN); // IP
+    new_client->port_num = message.listen_port; // port_num
+    // TODO: set socket? Do we need sockets?
+    new_client->ship = init_spaceship(client_count); // ship
+
+    // Put new client in clients array
+    new_client->next = clients; 
     clients = new_client;
     client_count++;
 
@@ -259,7 +265,9 @@ int main() {
     args->socket = client_socket;
     args->clientID = new_client->clientID;
     args->ship = clients[client_count - 1].ship;
-    // Thread talks to indiviual client
+    
+    
+    // Thread talks to individual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
     
     // end game if necessary
@@ -273,9 +281,6 @@ int main() {
              message.clientID, ipstr, ntohs(message.listen_port));
     } // else
   } // while
-  
-  // close the socket
-  close(client_socket);
 
   // print the current client list
   printf("\nCURRENT CLIENT LIST:\n");

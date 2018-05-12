@@ -95,9 +95,11 @@ void * listen_relay_func (void * socket_num) {
     } else {
       // the information was sent successfully
       global_continue_flag = message.continue_flag; // stops threads on client side
+      // TODO: change other globals' values?
       
-      // update your game board
-      // do some stuff
+      // TODO: update your game board
+      // Do we just call gui_update_display, or do we need to call individual functions
+      gui_draw_ship(message.ship0->x_position, message.ship0->y_position);
     }
   } // while true
   close(socket);

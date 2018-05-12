@@ -33,6 +33,7 @@
 #define CANNONBALL_EXIT_VEL 10
 
 // Directions
+#define NONE 0
 #define UP 1
 #define DOWN 2
 #define RIGHT 3
@@ -129,33 +130,23 @@ __host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot
   
   float cannonball_x_pos;
   float cannonball_y_pos;
-  float cannonball_x_vel;
-  float cannonball_y_vel;
 
   switch(direction_shot) {
     case UP :
       cannonball_x_pos = spaceship->x_position;
       cannonball_y_pos = spaceship->y_position - CANNONBALL_EXIT_POS;
-      cannonball_x_vel = spaceship->x_velocity;
-      cannonball_y_vel = spaceship->y_velocity - CANNONBALL_EXIT_VEL;
       break;
     case DOWN :
       cannonball_x_pos = spaceship->x_position;
       cannonball_y_pos = spaceship->y_position + CANNONBALL_EXIT_POS;
-      cannonball_x_vel = spaceship->x_velocity;
-      cannonball_y_vel = spaceship->y_velocity + CANNONBALL_EXIT_VEL;
       break;
     case RIGHT :
       cannonball_x_pos = spaceship->x_position + CANNONBALL_EXIT_POS;
       cannonball_y_pos = spaceship->y_position;
-      cannonball_x_vel = spaceship->x_velocity + CANNONBALL_EXIT_VEL;
-      cannonball_y_vel = spaceship->y_velocity;
       break;
     case LEFT :
       cannonball_x_pos = spaceship->x_position - CANNONBALL_EXIT_POS;
       cannonball_y_pos = spaceship->y_position;
-      cannonball_x_vel = spaceship->x_velocity - CANNONBALL_EXIT_VEL;
-      cannonball_y_vel = spaceship->y_velocity;
       break;
   }
 
@@ -174,11 +165,13 @@ __host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot
 }
 
 // Add a cannonball to the field (Note: the caller must update the number of cannonballs!)
-__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs) {
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, int direction_shot,
+                                      cannonball_t* cannonballs, int num_cannonballs) {
   float cannonball_x_pos;
   float cannonball_y_pos;
   float cannonball_x_vel;
   float cannonball_y_vel;
+
 
   switch(direction_shot) {
     case UP :
@@ -207,7 +200,6 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
       break;
   }
 
-  // Only add the cannonball if it will be within the bounds of the screen
   /* This has been moved to func 'is_cannonball_in_bounds'
   if (cannonball_x_pos > 0 &&
       cannonball_x_pos <= SCREEN_WIDTH &&
@@ -215,14 +207,13 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
       cannonball_y_pos <= SCREEN_HEIGHT) {
   */
 
-    // Reallocate memory to make space for the new cannonball
-  cannonballs = (cannonball_t*)realloc(cannonball, num_cannonballs * sizeof(cannonball_t));
+  // Reallocate memory to make space for the new cannonball
+  cannonballs = (cannonball_t*)realloc(cannonballs, num_cannonballs * sizeof(cannonball_t));
   
-    cannonballs[num_cannonballs].x_position = cannonball_x_pos;
-    cannonballs[num_cannonballs].y_position = cannonball_y_pos;
-    cannonballs[num_cannonballs].x_velocity = cannonball_x_vel;
-    cannonballs[num_cannonballs].y_velocity = cannonball_y_vel;
-  }
+  cannonballs[num_cannonballs].x_position = cannonball_x_pos;
+  cannonballs[num_cannonballs].y_position = cannonball_y_pos;
+  cannonballs[num_cannonballs].x_velocity = cannonball_x_vel;
+  cannonballs[num_cannonballs].y_velocity = cannonball_y_vel;
 
   return cannonballs;
 }
@@ -258,6 +249,10 @@ __host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_bo
     float x_boost;
     float y_boost;
     switch(direction_boost) {
+      case NONE :
+        x_boost = 0;
+        y_boost = 0;
+        break;
       case UP :
         x_boost = 0;
         y_boost = -10;

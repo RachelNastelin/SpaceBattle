@@ -1,4 +1,4 @@
-#include <pthread.h>
+#Include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -54,25 +54,8 @@ void quit_client (int port);
 void end_game ();
 
 /*************************** THREAD FUNCTIONS ******************************/
-void * talk_to_client(void * args){
-  talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
-  //client_info->clientID = client_count;
-
-  
-  while(continue_flag){
-    // make sure that all the clients are still connected
-    for(int i = 0; i < 2; i++){
-      if(clients[i].socket == LOST_CONNECTION){
-        remove_client(client_info->port);
-      } // if
-    } // for
-    
-    // listen for information from client
-    msg_to_server * response = (msg_to_server*)
-      malloc(sizeof(msg_to_server_t));
-    read(client_info->socket, response, sizeof(msg_to_server_t));
-
-    // call functions to handle information
+void client_calculations(talk_to_client_args_t * client_info){
+   // call functions to handle information
     if(client_info->cannonball_shot){
       if(cannonballs == NULL){
 	cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
@@ -114,12 +97,36 @@ void * talk_to_client(void * args){
       send_to_clients->ship0 = client_info->ship;
       pthread_mutex_unlock(&send_to_clients_lock);
     }
+} // client_calculations 
 
-    // send information about both clients
-    for(int j = 0; j < 2; j++){
-      send_to_clients->target_clientID = j;
-      write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
+void * talk_to_client(void * args){
+  talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
+  //client_info->clientID = client_count;
+
+  
+  while(continue_flag){
+    // make sure that all the clients are still connected
+    for(int i = 0; i < 2; i++){
+      if(clients[i].socket == LOST_CONNECTION){
+        remove_client(client_info->port);
+      } // if
     } // for
+    
+    // listen for information from client
+    msg_to_server * response = (msg_to_server*)
+      malloc(sizeof(msg_to_server_t));
+    read(client_info->socket, response, sizeof(msg_to_server_t));
+
+    client_calculations(client_info);
+    
+    if(send_to_clients->num_changes >= 2){
+      // if both clients have given new input
+      send_to_clients->num_changes = 0;
+      //for(int j = 0; j < 2; j++){
+      //  send_to_clients->target_clientID = j;
+        write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
+        //} // for
+    } // if
   } // while
   return NULL;
 } // talk_to_client

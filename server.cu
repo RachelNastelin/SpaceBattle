@@ -121,6 +121,7 @@ void * talk_to_client(void * args){
       write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
     } // for
   } // while
+  return NULL;
 } // talk_to_client
 /************************* END GAME FUNCTIONS ******************************/
 void stop_game(){

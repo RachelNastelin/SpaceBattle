@@ -229,7 +229,7 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, cannonball_t* cann
 
 
 // Update position and velocity of a spaceship
-__host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
+__host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_boost) {
   spaceship->x_position += spaceship->x_velocity * DT;
   spaceship->y_position += spaceship->y_velocity * DT;
 
@@ -289,6 +289,7 @@ __host__ void update_spaceship(spaceship_t* spaceship, int direction_boost) {
     if(spaceship->y_position < 0 && spaceship->y_velocity < 0) spaceship->y_velocity *= -0.5;
     if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0) spaceship->y_velocity *= -0.5;
   }
+  return spaceship;
 }
 
 // Has the GPU update cannonballs and transfers them to the CPU.

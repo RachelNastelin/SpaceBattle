@@ -1,4 +1,4 @@
-#Include <pthread.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,17 +18,21 @@
 #define LOST_CONNECTION -2 //clients that the server lost its connection with
 #define SERVER_PORT 6664
 // directions, used for user input
+#define NONE 0
 #define UP 1
 #define DOWN 2
 #define RIGHT 3
 #define LEFT 4
+#define CANNONBALL_LIMIT 100
 /********************************* STRUCTS *********************************/
 typedef struct talk_to_client_args {
   int clientID;
   int port;
   int socket;
   spaceship_t * ship;
-  int direction; //TODO: initialize this somewhere
+  bool boosted; //TODO: initialize this somewhere
+  int ship_direction; //TODO: initialize this somewhere
+  int shoot_direction; //TODO: initialize this somewhere
   bool cannonball_shot; //TODO: initialize this somewhere
 } talk_to_client_args_t;
 
@@ -55,48 +59,54 @@ void end_game ();
 
 /*************************** THREAD FUNCTIONS ******************************/
 void client_calculations(talk_to_client_args_t * client_info){
-   // call functions to handle information
+  // TODO: tell user if they've fired too many cannonballs??
+  if(num_cannonballs < CANNONBALL_LIMIT){
+    // call functions to handle information
     if(client_info->cannonball_shot){
       if(cannonballs == NULL){
-	cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
+        cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
       } // if
       // will the new cannonball be in the bounds of the screen?
-      if (is_cannonball_in_bounds(client_info->ship, client_info->direction)) {
-	// W! cannonball_t* new_cannonball = init_cannonball(client_info->ship, client_info->direction);
-	pthread_mutex_lock(&cannonballs_lock);
-	num_cannonballs += 1; 
-	add_cannonball(client_info->ship, cannonballs, num_cannonballs);
-	pthread_mutex_unlock(&cannonballs_lock);
+      if (is_cannonball_in_bounds(client_info->ship, client_info->shoot_direction)) {
+        pthread_mutex_lock(&cannonballs_lock);
+        num_cannonballs += 1; 
+        add_cannonball(client_info->ship, client_info->shoot_direction, cannonballs, num_cannonballs);
+        pthread_mutex_unlock(&cannonballs_lock);
       }
-      // W! num_cannonballs++;
     } // if a cannonball was shot
-    
+  } // if there aren't too many cannonballs shot
+
+  // handle existing cannonballs
+  update_cannonballs(cannonballs, num_cannonballs);
+  
     // put information together with information about other client
     // step 1: which client are we working with?
-    int i = 0;
-    while(clients[i].clientID != client_info->clientID);
-    if (i ==0){
-      // step 2: change the info in send_to_clients for the client you're
-      //         working with
-      pthread_mutex_lock(&send_to_clients_lock);
-      send_to_clients->clientID0 = clients[i].clientID;
-      send_to_clients->client_socket0 = clients[i].socket;
-      send_to_clients->listen_port0 = clients[i].port_num;
+  int i = 0;
+  while(clients[i].clientID != client_info->clientID);
+  // step 2: change the info in send_to_clients for the client you're
+  //         working with
+  if (i ==0){ // you're working with the first client
+    pthread_mutex_lock(&send_to_clients_lock);
+    send_to_clients->clientID0 = clients[i].clientID;
+    send_to_clients->client_socket0 = clients[i].socket;
+    send_to_clients->listen_port0 = clients[i].port_num;
+    if(client_info->boosted){
       send_to_clients->ship0 = update_spaceship(client_info->ship,
-						client_info->direction);
-      pthread_mutex_unlock(&send_to_clients_lock);
-    } else if (i == 1){
-      // step 2: change the info in send_to_clients for the client you're
-      //         working with
-      pthread_mutex_lock(&send_to_clients_lock);
-      send_to_clients->clientID1 = clients[i].clientID;
-      send_to_clients->client_socket1 = clients[i].socket;
-      send_to_clients->listen_port1 = clients[i].port_num;
-      // W! send_to_clients->ship1 = update_spaceship(client_info->ship, client_info->direction);
-      update_spaceship(client_info->ship, client_info->direction);
-      send_to_clients->ship0 = client_info->ship;
-      pthread_mutex_unlock(&send_to_clients_lock);
-    }
+                                                client_info->ship_direction);
+    } // if
+    pthread_mutex_unlock(&send_to_clients_lock);
+  } else if (i == 1){ // you're working with the second client
+    pthread_mutex_lock(&send_to_clients_lock);
+    send_to_clients->clientID1 = clients[i].clientID;
+    send_to_clients->client_socket1 = clients[i].socket;
+    send_to_clients->listen_port1 = clients[i].port_num;
+    // W! send_to_clients->ship1 = update_spaceship(client_info->ship, client_info->direction);
+    if(client_info->boosted){
+      update_spaceship(client_info->ship, client_info->ship_direction);
+    } // if
+    send_to_clients->ship0 = client_info->ship;
+    pthread_mutex_unlock(&send_to_clients_lock);
+  }
 } // client_calculations 
 
 void * talk_to_client(void * args){
@@ -122,10 +132,10 @@ void * talk_to_client(void * args){
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
       send_to_clients->num_changes = 0;
-      //for(int j = 0; j < 2; j++){
-      //  send_to_clients->target_clientID = j;
-        write(clients[i].socket, send_to_clients, sizeof(server_rsp_t));
-        //} // for
+      for(int j = 0; j < 2; j++){
+        send_to_clients->target_clientID = j;
+        write(clients[j].socket, send_to_clients, sizeof(server_rsp_t));
+      } // for
     } // if
   } // while
   return NULL;

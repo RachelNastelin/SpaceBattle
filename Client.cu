@@ -1,3 +1,4 @@
+
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -229,6 +230,7 @@ int main(int argc, char**argv){
   msg_to_server->continue_flag = global_continue_flag;
   server_rsp_t * response = server_connect(msg_to_server);
 
+  
   // edit our globals to take into account information gotten from the server
   if(response->target_clientID == 0){
     global_clientID = response->clientID0;
@@ -237,6 +239,7 @@ int main(int argc, char**argv){
     global_clientID = response->clientID1;
 
   } // else
+  
   msg_to_server->clientID = global_clientID;
 
   /************************* DISPLAY BOARD **********************************/

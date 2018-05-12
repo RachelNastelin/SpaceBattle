@@ -213,7 +213,7 @@ int main() {
   
   /*====================== ACCEPT CLIENT CONNECTIONS ======================*/
   // Accept 2 connections
-  while(client_count <= 2) {
+  while(client_count < 2) {
     // Accept a client connection
     struct sockaddr_in client_addr;
     socklen_t client_addr_length = sizeof(struct sockaddr_in);

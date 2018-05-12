@@ -11,7 +11,7 @@
 #include <netdb.h>
 #include <stdbool.h>
 #include <cuda.h>
-
+#include <SDL.h>
 #include "board.h"
 #include "driver.h"
 
@@ -37,7 +37,7 @@ int global_listen_port;
 int global_clientID;
 bool global_continue_flag; // True when the client has not quit
 pthread_mutex_t connections_lock = PTHREAD_MUTEX_INITIALIZER;
-//SDL_Renderer* renderer = NULL;
+SDL_Renderer* renderer = NULL;
 
 /*********************** FUNCTION SIGNATURES *********************************/
 
@@ -216,11 +216,11 @@ int main(int argc, char**argv){
   //star_t * stars = init_stars();
   //color_t star_color = {0,0,0,255};
   //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
-  // gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+  //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
 
   /********* SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
   // set up child socket, which will be constantly listening for incoming
-  //  connections
+  //   connections
   int listen_socket = setup_listen();
 
   /************************* CONNECT TO SERVER ******************************/
@@ -232,25 +232,36 @@ int main(int argc, char**argv){
   // edit our globals to take into account information gotten from the server
   if(response->target_clientID == 0){
     global_clientID = response->clientID0;
-  }
+  } // if
   else{
     global_clientID = response->clientID1;
 
-  }
+  } // else
   msg_to_server->clientID = global_clientID;
-  
 
   /************************* DISPLAY BOARD **********************************/
-  gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
-  gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
+  while(global_continue_flag){
+    //star_t * stars = init_stars();
+    //color_t star_color = {0,0,0,255};
+    //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
+    //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+    //gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
+    //gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
 
-  //SDL_RenderDrawLine(renderer, 320, 200, 300, 240);
-  //SDL_RenderDrawLine(renderer, 300, 240, 340, 240);
-                
+    SDL_RenderDrawLine(renderer, 320, 200, 300, 240);
+    SDL_RenderDrawLine(renderer, 300, 240, 340, 240);
 
-  // End
+    //Display the rendered image
+    gui_update_display();
+  }//while
+  
+  // Free up space
   free(msg_to_server);
   free(response);
   //free(stars);
   close(listen_socket);
+
+  //Clean up the graphical interface
+  gui_shutdown();
+  
 } // main

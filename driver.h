@@ -83,7 +83,7 @@ typedef struct client_list {
   struct client_list * next;
 } client_list_t;
 
-__host__ star_t* init_stars();
+__host__ star_t * init_stars();
 __host__ void free_stars();
 __host__ spaceship_t * init_spaceship(int clientID);
 __host__ void free_spaceship(spaceship_t* spaceship);

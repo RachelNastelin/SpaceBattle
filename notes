@@ -18,6 +18,10 @@ Client: Written, compiles, calls board functions when appropriate. MISSING USER 
 -quitting/continue_flag may be a problem later? (Neither is fully implemented... we should only need one)
 
 
+===== Questions =====
+1. Should we wait for both clients to send information before we update msg_to_clients in server?
+
+
 ===== Change before turning in =====
 Server: Get rid of print statement when a new client connects because the
         clientIDs are wrong and can't be fixed

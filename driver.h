@@ -44,10 +44,11 @@ typedef struct star {
 typedef struct msg_to_server{
   int clientID; // to differentiate between players
   int listen_port;
-  bool died; // true if the spaceship intersected with a cannonball or star
+  bool changed; // true if a button was pressed
   bool quitting; // 0 = not quitting, 1 = quitting
   bool cannonball_shot; // 0 = didn't shoot cannonball, 1 = shot cannonball
-  int direction; // LEFT, RIGHT, UP, or DOWN
+  int ship_direction; // LEFT, RIGHT, UP, or DOWN
+  int shoot_direction; // LEFT, RIGHT, UP, or DOWN
   bool continue_flag; // when false, stops all threads on client side 
 } msg_to_server_t;
 

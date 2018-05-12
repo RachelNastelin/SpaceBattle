@@ -62,10 +62,6 @@ void gui_init() {
     SDL_Quit();
     exit(2);
   }
-
-  //SDL_RenderPresent(sdlrenderer);
-  //SDL_SetRenderTarget(sdlrenderer, sdltexture);
-  //SDL_SetRenderDrawColor(sdlrenderer, 0x00, 0x00, 0x00, 0x00);
   
   // Clear the bitmap the GUI displays
   memset(bitmap, 0, sizeof(color_t) * SCREEN_WIDTH * SCREEN_HEIGHT);

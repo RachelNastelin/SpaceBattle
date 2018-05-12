@@ -117,7 +117,7 @@ __host__ void free_spaceship(spaceship_t* spaceship) {
 
 __host__ cannonball_t* init_cannonballs() {
   cannonball_t* cannonballs = (cannonball_t*) malloc(sizeof(cannonball_t));
-
+  // TODO: Initialize all cannonballs to NULL
   return cannonballs;
 }
 

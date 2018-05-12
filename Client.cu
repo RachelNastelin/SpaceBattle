@@ -17,9 +17,11 @@
 #include "driver.h"
 
 #define SERVER_PORT 6664
+
 #define NOT_IN_USE -1 // sockets not in use have this value
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
 // directions, used for user input
+
 #define UP 1
 #define DOWN -1
 #define RIGHT 2
@@ -47,39 +49,40 @@ void remove_connection (int index);
 int socket_setup (int port, struct sockaddr_in * addr);
 
 /***************************** THREAD FUNCTIONS ******************************/
-
+/*
 // thread to accept connections
 void * accept_connections_func (void * listen_socket_num) {
-  int socket = *(int*)listen_socket_num;
-  free(listen_socket_num);
+int socket = *(int*)listen_socket_num;
+free(listen_socket_num);
 
-  // Repeatedly accept connections
-  while(global_continue_flag) {
-    // Accept a client connection
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(struct sockaddr_in);
-    int client_socket = accept(socket, (struct sockaddr*)&client_addr,
-                               &client_addr_len);
-    pthread_mutex_lock(&connections_lock);
-    // add the new connection to our list of connections
-    connections[num_connections-1] = client_socket;
-    num_connections++;
-    pthread_mutex_unlock(&connections_lock);
+// Repeatedly accept connections
+while(global_continue_flag) {
+// Accept a client connection
+struct sockaddr_in client_addr;
+socklen_t client_addr_len = sizeof(struct sockaddr_in);
+int client_socket = accept(socket, (struct sockaddr*)&client_addr,
+&client_addr_len);
+pthread_mutex_lock(&connections_lock);
+// add the new connection to our list of connections
+connections[num_connections-1] = client_socket;
+num_connections++;
+pthread_mutex_unlock(&connections_lock);
     
-    // create a listen and relay thread for the new connection
-    pthread_t listen_thread;
-    int * socket_num = (int*)malloc(sizeof(int));
-    *socket_num = client_socket;
-    if(pthread_create(&listen_thread, NULL, listen_relay_func,
-                      (void*)socket_num)) {
-      perror("pthread_create failed");
-      exit(EXIT_FAILURE);
-    } // if  
-  } // while
-  return NULL;
+// create a listen and relay thread for the new connection
+pthread_t listen_thread;
+int * socket_num = (int*)malloc(sizeof(int));
+*socket_num = client_socket;
+if(pthread_create(&listen_thread, NULL, listen_relay_func,
+(void*)socket_num)) {
+perror("pthread_create failed");
+exit(EXIT_FAILURE);
+} // if  
+} // while
+return NULL;
 } // accept_connections_func
+*/
 
-// thread to listen for and relay messages
+ // thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
   int socket = *(int*)socket_num;
   free(socket_num);
@@ -143,14 +146,14 @@ int setup_listen() {
   global_listen_port = ntohs(addr_listen.sin_port);
 
   // Spin up a thread to constantly listen for connections on this socket
-  pthread_t accept_connections;
+  //pthread_t accept_connections;
   int * listen_socket_num = (int*)malloc(sizeof(int));
   *listen_socket_num = listen_socket;
-  if(pthread_create(&accept_connections, NULL, accept_connections_func,
-                    (void*)listen_socket_num)) {
-    perror("pthread_create failed");
-    exit(EXIT_FAILURE);
-  }
+  //if(pthread_create(&accept_connections, NULL, accept_connections_func,
+  //                  (void*)listen_socket_num)) {
+  //perror("pthread_create failed");
+  //exit(EXIT_FAILURE);
+  // }
   return listen_socket;
 } // setup_listen
 
@@ -219,6 +222,7 @@ int main(int argc, char**argv){
   //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
   //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
 
+  
   /********* SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
   // set up child socket, which will be constantly listening for incoming
   //   connections
@@ -251,9 +255,60 @@ int main(int argc, char**argv){
     //gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
     //gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
 
-    SDL_RenderDrawLine(renderer, 320, 200, 300, 240);
-    SDL_RenderDrawLine(renderer, 300, 240, 340, 240);
 
+   
+
+    /************************ HANDLE USER INPUT ******************************/
+    // use arrow keys to move and click to shoot
+    SDL_Event events;
+
+    
+    /*========================= HANDLE CLICKS ===============================*/
+    int mouse_x, mouse_y;
+    uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
+    if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
+     
+      // decide what direction we're shooting in
+      if(response->ship0->x_position > mouse_x){
+        // shoot left
+        msg_to_server->shoot_direction = LEFT;
+      }
+      else if(response->ship0->x_position < mouse_x){
+        // shoot right
+        msg_to_server->shoot_direction = RIGHT;
+      }
+
+      
+      /*========================= HANDLE ARROWKEYS ============================*/
+      // move ship
+      while(SDL_PollEvent(&events) == 1){
+        switch(events.type){
+        case SDLK_LEFT:
+          msg_to_server->ship_direction = LEFT;
+          msg_to_server->changed = true;
+          break;
+        case SDLK_RIGHT:
+          msg_to_server->changed = true;
+          msg_to_server->ship_direction = RIGHT;
+          break;
+        case SDLK_UP:
+          msg_to_server->changed = true;
+          msg_to_server->ship_direction = UP;
+          break;
+        case SDLK_DOWN:
+          msg_to_server->changed = true;
+          msg_to_server->ship_direction = DOWN;
+          break;
+        } // switch
+      } // while
+
+      // SEND MESSAGE TO SERVER
+      if(msg_to_server->changed == true){
+        write(listen_socket, msg_to_server, sizeof(msg_to_server_t));
+      }
+    } // while
+    
+   
     //Display the rendered image
     gui_update_display();
   }//while

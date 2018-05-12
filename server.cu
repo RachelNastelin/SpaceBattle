@@ -112,7 +112,6 @@ void client_calculations(talk_to_client_args_t * client_info){
 void * talk_to_client(void * args){
   talk_to_client_args_t * client_info = (talk_to_client_args_t *)args;
   //client_info->clientID = client_count;
-
   
   while(continue_flag){
     // make sure that all the clients are still connected
@@ -126,8 +125,6 @@ void * talk_to_client(void * args){
     msg_to_server * response = (msg_to_server*)
       malloc(sizeof(msg_to_server_t));
     read(client_info->socket, response, sizeof(msg_to_server_t));
-
-    client_calculations(client_info);
     
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
@@ -299,6 +296,10 @@ int main() {
              message.clientID, ipstr, ntohs(message.listen_port));
     } // else
   } // while
+
+  if(num_changes >= 1){
+    client_calculations();
+  }
 
   // print the current client list
   printf("\nCURRENT CLIENT LIST:\n");

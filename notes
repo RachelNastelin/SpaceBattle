@@ -1,25 +1,18 @@
 ========= TODO ==========
-1. GUI stuff: (Caelin)
-        - Call update_display more often so you don't pick up the background when moving the window
-        - Linker error with stars in Client.cu
-        - Make sure that when you try to draw something, it actually shows up
-2. Server and Driver: (Will)
-        - Fix mallocing and freeing calls in driver.cu 
-        - Make sure server calls driver functions correctly
-3. Make it possible for users to quit (Rachel)
+1. Fix problem with server exiting immediately once two clients are connected
+2. Get things to move when playing
 
 ========= Current Status ==========
-UI: Opaque white window pops up, but when dragged, two windows pick up the background from each other. 
+UI: Opaque black window pops up, and once two clients are connected, one ship is drawn on both windows. 
+       Spaceship does not move in response to user input. No other drawings. When dragged, two windows pick up 
+       the background from each other. 
 Driver: Written, compiles, working on collision (?)
 Server: Server can connect to the clients and send information back and forth. Calls driver functions 
-        when appropriate. 
-Client: Written, compiles, calls board functions when appropriate. MISSING USER INPUT, DO THIS NEXT
-
--quitting/continue_flag may be a problem later? (Neither is fully implemented... we should only need one)
-
+        when appropriate. EXITS AFTER BOTH CLIENTS CONNECT DUE TO SOME PROBLEM WITH CONTNIUE_FLAG
+Client: Written, compiles, calls board functions when appropriate. Can't quit, but maybe that's because server breaks.
 
 ===== Questions =====
-1. Should we wait for both clients to send information before we update msg_to_clients in server?
+1. Why is continue_flag setting itself to false? 
 
 
 ===== Change before turning in =====

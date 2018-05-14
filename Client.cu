@@ -21,19 +21,19 @@
 #define SERVER_PORT 6689
 
 #define NOT_IN_USE -1 // sockets not in use have this value
-#define LOST_CONNECTION -2 // clients that the server lost its connection with
+#define LOST_CONNECTION -2 //clients that the server lost its connection with
 // directions, used for user input
 
 #define UP 1
 #define DOWN -1
 #define RIGHT 2
 #define LEFT -2
-/********************************* STRUCTS **********************************/
+/******************************** STRUCTS **********************************/
 typedef struct user_input {
   int direction; // LEFT, RIGHT, UP, or DOWN
 } user_input_t;
 
-/****************************** GLOBALS **************************************/
+/****************************** GLOBALS ************************************/
 
 char * server_name;
 int connections[2]; // Each index has a socket number
@@ -44,13 +44,13 @@ bool global_continue_flag; // True when the client has not quit
 pthread_mutex_t connections_lock = PTHREAD_MUTEX_INITIALIZER;
 SDL_Renderer* renderer = NULL;
 
-/*********************** FUNCTION SIGNATURES *********************************/
+/*********************** FUNCTION SIGNATURES *******************************/
 
 void * listen_relay_func (void * socket_num);
 void remove_connection (int index);
 int socket_setup (int port, struct sockaddr_in * addr);
 
-/***************************** THREAD FUNCTIONS ******************************/
+/***************************** THREAD FUNCTIONS ****************************/
  // thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
     printf("I'm in listen_relay_func\n");
@@ -70,7 +70,7 @@ void * listen_relay_func (void * socket_num) {
     } else {
       // the information was sent successfully
       /*
-      global_continue_flag = message.continue_flag; // stops threads on client side
+      global_continue_flag = message.continue_flag; 
       gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
       gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
       gui_draw_cannonballs(700, 300);
@@ -88,7 +88,7 @@ void * listen_relay_func (void * socket_num) {
   return NULL;
 } // listen_relay_func
 
-/*************************** HELPER FUNCTIONS ********************************/
+/*************************** HELPER FUNCTIONS ******************************/
 // remove a connection from our list
 // MAKE THIS END THE PROGRAM
 void remove_connection (int index) {
@@ -152,7 +152,8 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
     exit(1);
   }
   // Specify the server's address
-  bcopy((char*)server->h_addr, (char*)&addr.sin_addr.s_addr, server->h_length);
+  bcopy((char*)server->h_addr, (char*)&addr.sin_addr.s_addr,
+        server->h_length);
 
   // Connect to the server
   if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
@@ -187,12 +188,13 @@ int socket_setup (int port, struct sockaddr_in * addr) {
   return s;
 } // socket_setup
 
-/********************************** MAIN *************************************/
+/********************************** MAIN ***********************************/
 int main(int argc, char**argv){
-  /******************** SET UP PART ONE: UI AND GLOBALS  *********************/
+  /******************** SET UP PART ONE: UI AND GLOBALS  *******************/
   server_name = argv[1];
   global_continue_flag = true;
-  msg_to_server_t * msg_to_server = (msg_to_server_t*)malloc(sizeof(msg_to_server_t));
+  msg_to_server_t * msg_to_server = (msg_to_server_t*)
+    malloc(sizeof(msg_to_server_t));
   //global_listen_port =
   
   // set up connections array
@@ -207,16 +209,15 @@ int main(int argc, char**argv){
   //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
 
   
-  /********* SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
+  /******** SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
   // set up child socket, which will be constantly listening for incoming
   //   connections
   int listen_socket = setup_listen();
-  /************************* CONNECT TO SERVER ******************************/
+  /************************* CONNECT TO SERVER *****************************/
   msg_to_server->clientID = global_clientID;
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
   msg_to_server->continue_flag = global_continue_flag;
 
-  ///// dies in next line
   server_rsp_t * response = server_connect(msg_to_server);
  
   pthread_t thread;
@@ -237,19 +238,22 @@ int main(int argc, char**argv){
   while(global_continue_flag){
     star_t * stars = init_stars();
     color_t star_color = {0,0,0,255};
-    gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
-    gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
-    
+    gui_draw_star(stars[0].x_position,
+                  stars[0].y_position,
+                  stars[0].radius,
+                  star_color);
+    gui_draw_star(stars[1].x_position,
+                  stars[1].y_position,
+                  stars[1].radius,
+                  star_color);
+       
 
-
-   
-
-    /************************ HANDLE USER INPUT ******************************/
+    /************************ HANDLE USER INPUT ****************************/
     // use arrow keys to move and click to shoot
     SDL_Event events;
 
     
-    /*========================= HANDLE CLICKS ===============================*/
+    /*========================= HANDLE CLICKS =============================*/
     int mouse_x, mouse_y;
     uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
     if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
@@ -266,7 +270,7 @@ int main(int argc, char**argv){
       }
     } // if the user clicked
       
-      /*========================= HANDLE ARROWKEYS ============================*/
+      /*========================= HANDLE ARROWKEYS ========================*/
       // move ship
       while(SDL_PollEvent(&events) == 1){
         switch(events.type){

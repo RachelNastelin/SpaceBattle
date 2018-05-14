@@ -272,7 +272,6 @@ int main() {
 
     /* STORE SOCKET AND SHIP FOR NEW CLIENT */
     clients[client_count - 1].socket = client_socket;
-    
     clients[client_count - 1].ship = init_spaceship(client_count);
     
     /* LISTEN TO CLIENT */
@@ -312,7 +311,7 @@ int main() {
     args->ship = clients[client_count - 1].ship;
     
      // TODO: call this less often?
-    client_calculations(args);
+    //client_calculations(args);
     
     // Thread talks to individual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
@@ -326,7 +325,6 @@ int main() {
       printf("\nClient %d connected from %s, on port %d\n",
              message.clientID, ipstr, ntohs(message.listen_port));
     } // else
-    
   } // while
 
   pthread_mutex_unlock(&continue_flag_lock);

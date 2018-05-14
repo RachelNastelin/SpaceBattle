@@ -7,10 +7,9 @@
 #include <SDL.h>
 #include <cuda.h>
 
-#include "board.h"
 #include "driver.h"
-
-/***************************************MACRO DEFINITIONS*********************************************/
+#include "board.h"
+/************************MACRO DEFINITIONS**********************************/
 
 
 #define THREADS 32
@@ -58,17 +57,19 @@ float drand(float min, float max) {
 */
 
 
-/***************************************GLOBAL VARIABLES*********************************************/
+/***************************** GLOBAL VARIABLES ****************************/
 // These variables should never be modified beyond their initialized values.
 star_t* stars;
 int num_stars;
 
 
-/***************************************FUNCTION IMPLEMENTATIONS*********************************************/
+/**************************FUNCTION IMPLEMENTATIONS*************************/
 
-// Initialize an array of star_t-s representing the stars on the playing field
+// Initialize an array of star_t-s representing the stars on the playing
+// field
 __host__ star_t* init_stars() {
-  stars = (star_t*) malloc(sizeof(star_t) * 2); // Initializing the global array "stars"
+  // Initialize the global array "stars"
+  stars = (star_t*) malloc(sizeof(star_t) * 2); 
 
   // First star
   stars[0].mass = 400;
@@ -91,8 +92,8 @@ __host__ void free_stars() {
   free(stars);
 }
 
-// Places the user's spaceship on oneside of the field, depending on whether the user is the first
-// or second client to connect to the server
+// Places the user's spaceship on oneside of the field, depending on whether
+// the user is the first or second client to connect to the server
 __host__ spaceship_t * init_spaceship(int clientID) {
   spaceship_t* spaceship = (spaceship_t*) malloc(sizeof(spaceship_t));
 
@@ -125,9 +126,9 @@ __host__ void free_cannonballs(cannonball_t* cannonballs) {
   free(cannonballs);
 }
 
-__host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot) {
-  bool result;
-  
+__host__ bool is_cannonball_in_bounds(spaceship_t* spaceship,
+                                      int direction_shot) {
+  bool result; 
   float cannonball_x_pos;
   float cannonball_y_pos;
 
@@ -164,9 +165,12 @@ __host__ bool is_cannonball_in_bounds(spaceship_t* spaceship, int direction_shot
   return result;
 }
 
-// Add a cannonball to the field (Note: the caller must update the number of cannonballs!)
-__host__ cannonball_t* add_cannonball(spaceship_t* spaceship, int direction_shot,
-                                      cannonball_t* cannonballs, int num_cannonballs) {
+// Add a cannonball to the field (Note: the caller must update the number of
+// cannonballs!)
+__host__ cannonball_t* add_cannonball(spaceship_t* spaceship,
+                                      int direction_shot,
+                                      cannonball_t* cannonballs,
+                                      int num_cannonballs) {
   float cannonball_x_pos;
   float cannonball_y_pos;
   float cannonball_x_vel;
@@ -208,7 +212,8 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, int direction_shot
   */
 
   // Reallocate memory to make space for the new cannonball
-  cannonballs = (cannonball_t*)realloc(cannonballs, num_cannonballs * sizeof(cannonball_t));
+  cannonballs = (cannonball_t*)
+    realloc(cannonballs, num_cannonballs * sizeof(cannonball_t));
   
   cannonballs[num_cannonballs].x_position = cannonball_x_pos;
   cannonballs[num_cannonballs].y_position = cannonball_y_pos;
@@ -220,14 +225,16 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship, int direction_shot
 
 
 // Update position and velocity of a spaceship
-__host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_boost) {
+__host__ spaceship_t * update_spaceship(spaceship_t* spaceship,
+                                        int direction_boost) {
   spaceship->x_position += spaceship->x_velocity * DT;
   spaceship->y_position += spaceship->y_velocity * DT;
 
   // Loop over all stars to compute forces
   for(int j = 0; j < num_stars ; j++) {
 
-    // Compute the distance between the cannonball and each star in each dimension
+    // Compute the distance between the cannonball and each star in each
+    // dimension
     float x_diff = spaceship->x_position - stars[j].x_position;
     float y_diff = spaceship->y_position - stars[j].y_position;
 
@@ -271,44 +278,61 @@ __host__ spaceship_t * update_spaceship(spaceship_t* spaceship, int direction_bo
         break;
     }
     
-    float x_acceleration = -x_diff * G * CANNONBALL_MASS / (dist * dist) + x_boost;
-    float y_acceleration = -y_diff * G * CANNONBALL_MASS / (dist * dist) + y_boost;
+    float x_acceleration = -x_diff * G * CANNONBALL_MASS / (dist * dist) +
+      x_boost;
+    float y_acceleration = -y_diff * G * CANNONBALL_MASS / (dist * dist) +
+      y_boost;
 
     // Update the star velocity
     spaceship->x_velocity += x_acceleration * DT;
     spaceship->y_velocity += y_acceleration * DT;
 
     // Handle edge collisiosn
-    if(spaceship->x_position < 0 && spaceship->x_velocity < 0) spaceship->x_velocity *= -0.5;
-    if(spaceship->x_position >= SCREEN_WIDTH && spaceship->x_velocity > 0) spaceship->x_velocity *= -0.5;
-    if(spaceship->y_position < 0 && spaceship->y_velocity < 0) spaceship->y_velocity *= -0.5;
-    if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0) spaceship->y_velocity *= -0.5;
+    if(spaceship->x_position < 0 && spaceship->x_velocity < 0)
+      spaceship->x_velocity *= -0.5;
+    if(spaceship->x_position >= SCREEN_WIDTH && spaceship->x_velocity > 0)
+      spaceship->x_velocity *= -0.5;
+    if(spaceship->y_position < 0 && spaceship->y_velocity < 0)
+      spaceship->y_velocity *= -0.5;
+    if(spaceship->y_position >= SCREEN_HEIGHT && spaceship->y_velocity > 0)
+      spaceship->y_velocity *= -0.5;
   }
   return spaceship;
 }
 
 // Has the GPU update cannonballs and transfers them to the CPU.
-__host__ void  update_cannonballs(cannonball_t* cpu_cannonballs, int num_cannonballs) {
+__host__ void  update_cannonballs(cannonball_t* cpu_cannonballs,
+                                  int num_cannonballs) {
   cannonball_t* gpu_cannonballs = NULL;
 
   // Realloc from cpu to gpu
-  gpuErrchk(cudaMalloc(&gpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs))); 
-  gpuErrchk(cudaMemcpy(gpu_cannonballs, cpu_cannonballs, sizeof(cannonball_t) * (num_cannonballs), cudaMemcpyHostToDevice));
+  gpuErrchk(cudaMalloc(&gpu_cannonballs,
+                       sizeof(cannonball_t) * (num_cannonballs))); 
+  gpuErrchk(cudaMemcpy(gpu_cannonballs, cpu_cannonballs,
+                       sizeof(cannonball_t) * (num_cannonballs),
+                       cudaMemcpyHostToDevice));
 
   int blocks = (num_cannonballs + THREADS - 1) / THREADS;
 
   // Calculate positions and velocities of all cannonballs in the gpu
-  update_cannonballs_gpu<<<blocks, THREADS>>>(gpu_cannonballs, num_cannonballs, stars, num_stars);
+  update_cannonballs_gpu<<<blocks, THREADS>>>(gpu_cannonballs,
+                                              num_cannonballs, stars,
+                                              num_stars);
   gpuErrchk(cudaDeviceSynchronize());
 
   // Copy udated cannonballs back to CPU
-  gpuErrchk(cudaMemcpy(cpu_cannonballs, gpu_cannonballs, sizeof(cannonball_t) * num_cannonballs, cudaMemcpyDeviceToHost));
+  gpuErrchk(cudaMemcpy(cpu_cannonballs, gpu_cannonballs,
+                       sizeof(cannonball_t) * num_cannonballs,
+                       cudaMemcpyDeviceToHost));
 
   free(gpu_cannonballs);
 }
 
 // Updates cannonballs' position and velocity concurrently using the GPU
-__global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannonballs, star_t* stars, int num_stars) {
+__global__ void update_cannonballs_gpu(cannonball_t* cannonballs,
+                                       int num_cannonballs,
+                                       star_t* stars,
+                                       int num_stars) {
   int i = (blockIdx.x * THREADS) + threadIdx.x;
   if (i < num_cannonballs) {
     cannonballs[i].x_position += cannonballs[i].x_velocity * DT;
@@ -320,7 +344,8 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
       // vvv cannonballs don't compute on themselves
       // if(i == j) continue;
 
-      // Compute the distance between the cannonball and each star in each dimension
+      // Compute the distance between the cannonball and each star in each
+      // dimension
       float x_diff = cannonballs[i].x_position - stars[j].x_position;
       float y_diff = cannonballs[i].y_position - stars[j].y_position;
 
@@ -347,29 +372,40 @@ __global__ void update_cannonballs_gpu(cannonball_t* cannonballs, int num_cannon
       cannonballs[i].y_velocity += y_acceleration * DT;
 
       // Handle edge collisiosn
-      if(cannonballs[i].x_position < 0 && cannonballs[i].x_velocity < 0) cannonballs[i].x_velocity *= -0.5;
-      if(cannonballs[i].x_position >= SCREEN_WIDTH && cannonballs[i].x_velocity > 0) cannonballs[i].x_velocity *= -0.5;
-      if(cannonballs[i].y_position < 0 && cannonballs[i].y_velocity < 0) cannonballs[i].y_velocity *= -0.5;
-      if(cannonballs[i].y_position >= SCREEN_HEIGHT && cannonballs[i].y_velocity > 0) cannonballs[i].y_velocity *= -0.5;
+      if(cannonballs[i].x_position < 0 && cannonballs[i].x_velocity < 0)
+        cannonballs[i].x_velocity *= -0.5;
+      if(cannonballs[i].x_position >= SCREEN_WIDTH
+         && cannonballs[i].x_velocity > 0)
+        cannonballs[i].x_velocity *= -0.5;
+      if(cannonballs[i].y_position < 0 && cannonballs[i].y_velocity < 0)
+        cannonballs[i].y_velocity *= -0.5;
+      if(cannonballs[i].y_position >= SCREEN_HEIGHT
+         && cannonballs[i].y_velocity > 0)
+        cannonballs[i].y_velocity *= -0.5;
     }
   }
 }
 
 
-__host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonballs, int num_cannonballs) {
+__host__ bool spaceship_collision(spaceship_t* spaceship,
+                                  cannonball_t* cannonballs,
+                                  int num_cannonballs) {
   float ship_x = spaceship->x_position;
   float ship_y = spaceship->y_position;
 
   // Check for collisions with all stars
   for (int i = 0; i < num_stars; i++) {
-    if (check_collision(ship_x, ship_y, SPACESHIP_RADIUS, stars[i].x_position, stars[i].y_position, stars[i].radius)) {
+    if (check_collision(ship_x, ship_y, SPACESHIP_RADIUS,
+                        stars[i].x_position, stars[i].y_position,
+                        stars[i].radius)) {
       return true;
     }
   }
   // Check for collisions with all cannonballs
   for (int i = 0; i < num_cannonballs; i++) {
     if (check_collision(ship_x, ship_y, SPACESHIP_RADIUS,
-                        cannonballs[i].x_position, cannonballs[i].y_position, CANNONBALL_RADIUS)) {
+                        cannonballs[i].x_position,
+                        cannonballs[i].y_position, CANNONBALL_RADIUS)) {
       return true;
     }
   }
@@ -379,7 +415,8 @@ __host__ bool spaceship_collision(spaceship_t* spaceship, cannonball_t* cannonba
    
 
 // Is there a collision here?
-__host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, float obj2_x, float obj2_y, float obj2_radius) {
+__host__ bool check_collision(float obj1_x,float obj1_y,float obj1_radius,
+                              float obj2_x,float obj2_y,float obj2_radius) {
   // Compute the distance between each obj in each dimension
   float x_diff = obj1_x - obj2_x;
   float y_diff = obj1_y - obj2_y;
@@ -387,128 +424,11 @@ __host__ bool check_collision(float obj1_x, float obj1_y, float obj1_radius, flo
   // Compute the magnitude of the distance vector
   float dist = sqrt(x_diff * x_diff + y_diff * y_diff);
 
-  // If the distance between the objects is <= their combined radius, then there is a collision
+  // If the distance between the objects is <= their combined radius, then
+  // there is a collision
   if (dist <= obj1_radius + obj2_radius) {
     return true;
   } else {
     return false;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Pay no attention to the code behind the curtain!
-
-/***************************************\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-\|||||||||||||||||||||||||||||||||||||||/
-/|||||||||||||||||||||||||||||||||||||||\
-
-
-// Old gpu lab code for posterity I guess
-
-int main(int argc, char** argv) {
-  // Initialize the graphical interface
-  gui_init();
-
-  // Run as long as this is true
-  bool running = true;
-
-  // Is the mouse currently clicked?
-  bool clicked = false;
-
-  // This will hold our array of cpu_stars
-  star_t* cpu_stars = NULL;
-  star_t* gpu_stars = NULL;
-  int num_stars = 0;
-
-  // Start main loop
-  while(running) {
-    // Check for events
-    SDL_Event event;
-    while(SDL_PollEvent(&event) == 1) {
-      // If the event is a quit event, then leave the loop
-      if(event.type == SDL_QUIT) running = false;
-    }
-
-    // Get the current mouse state
-    int mouse_x, mouse_y;
-    uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y);
-
-    // Is the mouse pressed?
-    if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-      // Is this the beginning of a mouse click?
-      if(!clicked) {
-        clicked = true;
-        cpu_stars = (star_t*)realloc(cpu_stars, (num_stars + 1) * sizeof(star_t));
-        cpu_stars[num_stars].x_position = mouse_x;
-        cpu_stars[num_stars].y_position = mouse_y;
-        cpu_stars[num_stars].x_velocity = 0;
-        cpu_stars[num_stars].y_velocity = 0;
-        // Generate a random mass skewed toward small sizes
-        cpu_stars[num_stars].mass = drand(0, 1) * drand(0, 1) * 50;
-        num_stars++;
-
-        // Copy to the GPU
-        if (gpu_stars != NULL) {
-          cudaFree(gpu_stars);
-        }
-        gpuErrchk(cudaMalloc(&gpu_stars, sizeof(star_t) * (num_stars + 1)));
-
-	gpuErrchk(cudaMemcpy(gpu_stars, cpu_stars, sizeof(star_t) * (num_stars + 1), cudaMemcpyHostToDevice));
-
-        // Remember to free gpu_stars!
-      }
-    } else {
-      // The mouse click is finished
-      clicked = false;
-    }
-
-    // Draw stars
-    for(int i=0; i<num_stars; i++) {
-      color_t color = {255, 255, 255, 255};
-      gui_draw_circle(cpu_stars[i].x_position, cpu_stars[i].y_position, star_radius(cpu_stars[i].mass), color);
-    }
-
-    int blocks = (num_stars + THREADS - 1) / THREADS;
-
-    updateStars<<<blocks, THREADS>>>(gpu_stars, num_stars);
-    gpuErrchk(cudaDeviceSynchronize());
-
-    // Copy udated stars back to CPU
-    gpuErrchk(cudaMemcpy(cpu_stars, gpu_stars, sizeof(star_t) * num_stars, cudaMemcpyDeviceToHost));
-
-  }
-
-  // Free the stars array
-  free(cpu_stars);
-  cudaFree(gpu_stars);
-
-  // Clean up the graphical interface
-  gui_shutdown();
-
-  return 0;
-}
-*/

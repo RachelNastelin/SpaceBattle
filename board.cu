@@ -82,7 +82,8 @@ void gui_update_display() {
 
   // Release the raw texture data
   SDL_UnlockTexture(sdltexture);
-  
+  gui_draw_ship(100, 100);
+
   // Copy the texture to the renderer
   SDL_Rect destination = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
   SDL_RenderCopy(sdlrenderer, sdltexture, NULL, &destination);

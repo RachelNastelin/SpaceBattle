@@ -13,10 +13,9 @@
 #include <stdbool.h>
 #include <cuda.h>
 #include <SDL.h>
-#include "board.h"
 #include "driver.h"
-
-#define SERVER_PORT 6664
+#include "board.h"
+#define SERVER_PORT 6643
 
 #define NOT_IN_USE -1 // sockets not in use have this value
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
@@ -49,39 +48,6 @@ void remove_connection (int index);
 int socket_setup (int port, struct sockaddr_in * addr);
 
 /***************************** THREAD FUNCTIONS ******************************/
-/*
-// thread to accept connections
-void * accept_connections_func (void * listen_socket_num) {
-int socket = *(int*)listen_socket_num;
-free(listen_socket_num);
-
-// Repeatedly accept connections
-while(global_continue_flag) {
-// Accept a client connection
-struct sockaddr_in client_addr;
-socklen_t client_addr_len = sizeof(struct sockaddr_in);
-int client_socket = accept(socket, (struct sockaddr*)&client_addr,
-&client_addr_len);
-pthread_mutex_lock(&connections_lock);
-// add the new connection to our list of connections
-connections[num_connections-1] = client_socket;
-num_connections++;
-pthread_mutex_unlock(&connections_lock);
-    
-// create a listen and relay thread for the new connection
-pthread_t listen_thread;
-int * socket_num = (int*)malloc(sizeof(int));
-*socket_num = client_socket;
-if(pthread_create(&listen_thread, NULL, listen_relay_func,
-(void*)socket_num)) {
-perror("pthread_create failed");
-exit(EXIT_FAILURE);
-} // if  
-} // while
-return NULL;
-} // accept_connections_func
-*/
-
  // thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
   int socket = *(int*)socket_num;
@@ -92,18 +58,22 @@ void * listen_relay_func (void * socket_num) {
     server_rsp_t message;
     // try to read a message
     
-    if (read(socket, &message, sizeof(msg_to_server_t)) <= 0) {
+    if (read(socket, &message, sizeof(server_rsp_t)) <= 0) {
       // something went wrong, exit
       remove_connection(socket);
       
     } else {
       // the information was sent successfully
       global_continue_flag = message.continue_flag; // stops threads on client side
+      gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
+      gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
+      gui_draw_cannonballs(700, 300);
+      color_t red = {0,255,0,0};
+      gui_draw_star(200,200,50,red);
       // TODO: change other globals' values?
-      
+      gui_update_display();
       // TODO: update your game board
       // Do we just call gui_update_display, or do we need to call individual functions
-      gui_draw_ship(message.ship0->x_position, message.ship0->y_position);
     }
   } // while true
   close(socket);
@@ -252,8 +222,7 @@ int main(int argc, char**argv){
     //color_t star_color = {0,0,0,255};
     //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
     //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
-    //gui_draw_ship(response->ship0->x_position,response->ship0->y_position);
-    //gui_draw_ship(response->ship1->x_position,response->ship1->y_position);
+    
 
 
    
@@ -267,7 +236,8 @@ int main(int argc, char**argv){
     int mouse_x, mouse_y;
     uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
     if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
-     
+      msg_to_server->cannonball_shot = true;
+      
       // decide what direction we're shooting in
       if(response->ship0->x_position > mouse_x){
         // shoot left
@@ -277,7 +247,7 @@ int main(int argc, char**argv){
         // shoot right
         msg_to_server->shoot_direction = RIGHT;
       }
-
+    } // if the user clicked
       
       /*========================= HANDLE ARROWKEYS ============================*/
       // move ship
@@ -299,6 +269,10 @@ int main(int argc, char**argv){
           msg_to_server->changed = true;
           msg_to_server->ship_direction = DOWN;
           break;
+        case SDLK_ESCAPE:
+          global_continue_flag = false;
+          msg_to_server->continue_flag = false;
+          break;
         } // switch
       } // while
 
@@ -306,7 +280,6 @@ int main(int argc, char**argv){
       if(msg_to_server->changed == true){
         write(listen_socket, msg_to_server, sizeof(msg_to_server_t));
       }
-    } // while
     
    
     //Display the rendered image

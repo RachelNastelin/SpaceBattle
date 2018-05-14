@@ -12,11 +12,11 @@
 #include <time.h>
 #include <cuda.h>
 
-#include "board.h"
 #include "driver.h"
+#include "board.h"
 
 #define LOST_CONNECTION -2 //clients that the server lost its connection with
-#define SERVER_PORT 6664
+#define SERVER_PORT 6643
 // directions, used for user input
 #define NONE 0
 #define UP 1
@@ -67,10 +67,13 @@ void client_calculations(talk_to_client_args_t * client_info){
         cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
       } // if
       // will the new cannonball be in the bounds of the screen?
-      if (is_cannonball_in_bounds(client_info->ship, client_info->shoot_direction)) {
+      if (is_cannonball_in_bounds(client_info->ship,
+                                  client_info->shoot_direction)) {
         pthread_mutex_lock(&cannonballs_lock);
         num_cannonballs += 1; 
-        add_cannonball(client_info->ship, client_info->shoot_direction, cannonballs, num_cannonballs);
+        add_cannonball(client_info->ship,
+                       client_info->shoot_direction,
+                       cannonballs, num_cannonballs);
         pthread_mutex_unlock(&cannonballs_lock);
       }
     } // if a cannonball was shot
@@ -87,6 +90,9 @@ void client_calculations(talk_to_client_args_t * client_info){
   //         working with
   if (i ==0){ // you're working with the first client
     pthread_mutex_lock(&send_to_clients_lock);
+    if(send_to_clients == NULL){
+      
+    }
     send_to_clients->clientID0 = clients[i].clientID;
     send_to_clients->client_socket0 = clients[i].socket;
     send_to_clients->listen_port0 = clients[i].port_num;
@@ -100,7 +106,7 @@ void client_calculations(talk_to_client_args_t * client_info){
     send_to_clients->clientID1 = clients[i].clientID;
     send_to_clients->client_socket1 = clients[i].socket;
     send_to_clients->listen_port1 = clients[i].port_num;
-    // W! send_to_clients->ship1 = update_spaceship(client_info->ship, client_info->direction);
+   
     if(client_info->boosted){
       update_spaceship(client_info->ship, client_info->ship_direction);
     } // if
@@ -125,7 +131,7 @@ void * talk_to_client(void * args){
     msg_to_server * response = (msg_to_server*)
       malloc(sizeof(msg_to_server_t));
     read(client_info->socket, response, sizeof(msg_to_server_t));
-    
+
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
       send_to_clients->num_changes = 0;
@@ -135,11 +141,13 @@ void * talk_to_client(void * args){
       } // for
     } // if
   } // while
+  printf("continue_flag = false\n");
   return NULL;
 } // talk_to_client
 /************************* END GAME FUNCTIONS ******************************/
 void stop_game(){
   server_rsp_t quit_msg;
+  printf("Stopping game.\n");
   for(int i = 0; i < 2; i++){
     if(i == 0){
       quit_msg.clientID0 = clients[i].clientID;
@@ -153,6 +161,7 @@ void stop_game(){
     }
     write(clients[i].socket, &quit_msg, sizeof(server_rsp_t));
   } // for
+  //gui_shutdown();
   free(clients);
   free(send_to_clients);
   pthread_mutex_destroy(&send_to_clients_lock);
@@ -221,6 +230,9 @@ int main() {
   // set up the list of connected clients
   clients = (client_list_t*)malloc(sizeof(client_list_t));
   int client_socket;
+  send_to_clients = (server_rsp_t *)malloc(sizeof(server_rsp_t*));
+  send_to_clients->continue_flag = true;
+  send_to_clients->num_changes = 0;
   pthread_mutex_init(&(send_to_clients_lock), NULL);
   pthread_mutex_init(&(cannonballs_lock), NULL);
 
@@ -281,6 +293,8 @@ int main() {
     args->clientID = new_client->clientID;
     args->ship = clients[client_count - 1].ship;
     
+     // TODO: call this less often?
+    client_calculations(args);
     
     // Thread talks to individual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
@@ -288,8 +302,6 @@ int main() {
     // end game if necessary
     if (message.continue_flag == false) {
       quit_client(message.listen_port);
-    } else if(message.died == true){
-      end_game();
     } else {
       // if they aren't trying to quit, connect them
       printf("\nClient %d connected from %s, on port %d\n",
@@ -297,18 +309,7 @@ int main() {
     } // else
   } // while
 
-  if(num_changes >= 1){
-    client_calculations();
-  }
-
-  // print the current client list
-  printf("\nCURRENT CLIENT LIST:\n");
-  client_list_t* current = clients;
-  while (current != NULL) {
-    printf("Client %d, at %s, on port %d.\n", current->clientID, current->ip,
-           current->port_num);
-    current = current->next;
-  }
+  printf("Both clients connected.\n");
   
-  close(s);
+  // TODO: close socket somewhere
 }

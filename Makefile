@@ -1,4 +1,3 @@
-
 CC := nvcc
 CFLAGS := -g $(shell sdl2-config --cflags) -ccbin clang-3.8 -arch sm_20 -Wno-deprecated-gpu-targets 
 LDFLAGS := $(shell sdl2-config --libs) -lm -lpthread

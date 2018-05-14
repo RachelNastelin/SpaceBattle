@@ -13,9 +13,12 @@
 #include <stdbool.h>
 #include <cuda.h>
 #include <SDL.h>
+#include <errno.h>
+
+
 #include "driver.h"
 #include "board.h"
-#define SERVER_PORT 6643
+#define SERVER_PORT 6680
 
 #define NOT_IN_USE -1 // sockets not in use have this value
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
@@ -60,6 +63,7 @@ void * listen_relay_func (void * socket_num) {
     
     if (read(socket, &message, sizeof(server_rsp_t)) <= 0) {
       // something went wrong, exit
+      printf("Client.cu read failed\n");
       remove_connection(socket);
       
     } else {
@@ -143,6 +147,7 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
   // Connect to the server
   if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
     perror("connect failed");
+    printf("ERROR: %s\n", strerror(errno));
     exit(2);
   } // if
 
@@ -203,7 +208,8 @@ int main(int argc, char**argv){
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
   msg_to_server->continue_flag = global_continue_flag;
   server_rsp_t * response = server_connect(msg_to_server);
-
+  pthread_t thread;
+  pthread_create(&thread, NULL, listen_relay_func, &listen_socket);
   
   // edit our globals to take into account information gotten from the server
   if(response->target_clientID == 0){
@@ -218,10 +224,10 @@ int main(int argc, char**argv){
 
   /************************* DISPLAY BOARD **********************************/
   while(global_continue_flag){
-    //star_t * stars = init_stars();
-    //color_t star_color = {0,0,0,255};
-    //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
-    //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+    star_t * stars = init_stars();
+    color_t star_color = {0,0,0,255};
+    gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
+    gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
     
 
 
@@ -285,9 +291,11 @@ int main(int argc, char**argv){
     //Display the rendered image
     gui_update_display();
   }//while
+
+  pthread_join(thread, NULL);
   
   // Free up space
-  free(msg_to_server);
+  //free(msg_to_server);
   free(response);
   //free(stars);
   close(listen_socket);

@@ -16,7 +16,7 @@
 #include "board.h"
 
 #define LOST_CONNECTION -2 //clients that the server lost its connection with
-#define SERVER_PORT 6643
+#define SERVER_PORT 6680
 // directions, used for user input
 #define NONE 0
 #define UP 1
@@ -48,6 +48,7 @@ pthread_mutex_t send_to_clients_lock;
 cannonball_t * cannonballs;
 pthread_mutex_t cannonballs_lock;
 int num_cannonballs;
+pthread_mutex_t continue_flag_lock;
 bool continue_flag;
 
 /**************************** FUNCTIONS ************************************/
@@ -64,7 +65,7 @@ void client_calculations(talk_to_client_args_t * client_info){
     // call functions to handle information
     if(client_info->cannonball_shot){
       if(cannonballs == NULL){
-        cannonballs = init_cannonballs(); // W! (cannonball_t*)malloc(sizeof(cannonball_t));
+        cannonballs = init_cannonballs(); 
       } // if
       // will the new cannonball be in the bounds of the screen?
       if (is_cannonball_in_bounds(client_info->ship,
@@ -230,13 +231,21 @@ int main() {
   // set up the list of connected clients
   clients = (client_list_t*)malloc(sizeof(client_list_t));
   int client_socket;
-  send_to_clients = (server_rsp_t *)malloc(sizeof(server_rsp_t*));
+  send_to_clients = (server_rsp_t *)malloc(sizeof(server_rsp_t));
+  
+  pthread_mutex_unlock(&continue_flag_lock);
   send_to_clients->continue_flag = true;
+  pthread_mutex_lock(&continue_flag_lock);
+
   send_to_clients->num_changes = 0;
   pthread_mutex_init(&(send_to_clients_lock), NULL);
-  pthread_mutex_init(&(cannonballs_lock), NULL);
+  pthread_mutex_init(&(cannonballs_lock), NULL);  
+  pthread_mutex_init(&(continue_flag_lock), NULL);
 
-  
+  continue_flag = true;
+  pthread_mutex_lock(&continue_flag_lock);
+
+  pthread_t new_client_thread;
   /*====================== ACCEPT CLIENT CONNECTIONS ======================*/
   // Accept 2 connections
   while(client_count < 2) {
@@ -247,6 +256,7 @@ int main() {
                            &client_addr_length);
     if(client_socket == -1) {
       perror("accept failed");
+      
       exit(2);
     }
 
@@ -258,7 +268,7 @@ int main() {
     
     /* LISTEN TO CLIENT */
     msg_to_server_t message;
-    if(read(client_socket, &message, sizeof(server_rsp_t)) == -1){
+    if(read(client_socket, &message, sizeof(msg_to_server_t)) == -1){
       // if the server couldn't read from the client, exit the game
       remove_client(message.listen_port);
     }
@@ -285,7 +295,6 @@ int main() {
     
     /*============ SET UP COMMUNICATION WITH NEW CLIENT ==================*/ 
     // make new thread to communicate with client
-    pthread_t new_client_thread;
     talk_to_client_args_t * args = (talk_to_client_args_t*)
       malloc(sizeof(talk_to_client_args_t));
     args->port = new_client->port_num;
@@ -301,15 +310,21 @@ int main() {
     
     // end game if necessary
     if (message.continue_flag == false) {
+      printf("continue_flag = false\n");
       quit_client(message.listen_port);
     } else {
       // if they aren't trying to quit, connect them
       printf("\nClient %d connected from %s, on port %d\n",
              message.clientID, ipstr, ntohs(message.listen_port));
     } // else
+    
   } // while
 
+  pthread_mutex_unlock(&continue_flag_lock);
+  continue_flag = true;
+  pthread_mutex_lock(&continue_flag_lock);
   printf("Both clients connected.\n");
   
+  pthread_join(new_client_thread, NULL);
   // TODO: close socket somewhere
 }

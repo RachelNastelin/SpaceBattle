@@ -1,6 +1,11 @@
 ========= TODO ==========
 1. Fix problem with server exiting immediately once two clients are connected
 2. Get things to move when playing
+3. Work on cannonball shooting
+4. Get things to be drawn correctly
+5. ** Project report **
+6. Whatever evaluation/testing we're doing for the report
+7. Decide what parts of the project to cut and cut them (?)
 
 ========= Current Status ==========
 UI: Opaque black window pops up, and once two clients are connected, one ship is drawn on both windows. 
@@ -12,7 +17,8 @@ Server: Server can connect to the clients and send information back and forth. C
 Client: Written, compiles, calls board functions when appropriate. Can't quit, but maybe that's because server breaks.
 
 ===== Questions =====
-1. Why is continue_flag setting itself to false? 
+1. Why is continue_flag setting itself to false after both clients join?
+2. Why is only one ship being drawn?
 
 
 ===== Change before turning in =====

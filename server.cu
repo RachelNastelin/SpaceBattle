@@ -141,7 +141,7 @@ void * talk_to_client(void * args){
     // listen for information from client
     msg_to_server * response = (msg_to_server*)
       malloc(sizeof(msg_to_server_t));
-    read(client_info->socket, response, sizeof(msg_to_server_t));
+    // read(client_info->socket, response, sizeof(msg_to_server_t));
 
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
@@ -273,7 +273,6 @@ int main() {
     /* STORE SOCKET AND SHIP FOR NEW CLIENT */
     clients[client_count - 1].socket = client_socket;
     
-    // W! spaceship_t * ship = (spaceship_t*)malloc(sizeof(spaceship_t));
     clients[client_count - 1].ship = init_spaceship(client_count);
     
     /* LISTEN TO CLIENT */

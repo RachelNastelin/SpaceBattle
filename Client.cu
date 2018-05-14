@@ -140,14 +140,20 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
   // set up socket to connect to server
   struct sockaddr_in addr;
   int s = socket_setup(SERVER_PORT, &addr);
+
   // set up the server as passed into the command line
+
   struct hostent* server = gethostbyname(server_name);
+
   if (server == NULL) {
+          printf("server is null\n");
+
     fprintf(stderr, "Unable to find host %s\n", server_name);
     exit(1);
   }
   // Specify the server's address
   bcopy((char*)server->h_addr, (char*)&addr.sin_addr.s_addr, server->h_length);
+
   // Connect to the server
   if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
     perror("connect failed");

@@ -1,4 +1,3 @@
-
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -51,9 +50,9 @@ void remove_connection (int index);
 int socket_setup (int port, struct sockaddr_in * addr);
 
 /***************************** THREAD FUNCTIONS ****************************/
- // thread to listen for and relay messages
+// thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
-    printf("I'm in listen_relay_func\n");
+  printf("I'm in listen_relay_func\n");
   int socket = *(int*)socket_num;
   free(socket_num);
   while (global_continue_flag) {
@@ -68,12 +67,15 @@ void * listen_relay_func (void * socket_num) {
       remove_connection(socket);
       
     } else {
+
+
+      
       // the information was sent successfully
       /*
-      global_continue_flag = message.continue_flag; 
-      gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
-      gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
-      gui_draw_cannonballs(700, 300);
+        global_continue_flag = message.continue_flag; 
+        gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
+        gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
+        gui_draw_cannonballs(700, 300);
       */
       printf("drawing!\n");
       color_t red = {0,255,0,0};
@@ -146,8 +148,7 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
   struct hostent* server = gethostbyname(server_name);
 
   if (server == NULL) {
-          printf("server is null\n");
-
+    printf("server is null\n");
     fprintf(stderr, "Unable to find host %s\n", server_name);
     exit(1);
   }
@@ -156,7 +157,7 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
         server->h_length);
 
   // Connect to the server
-  if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))) {
+  if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))){
     perror("connect failed");
     printf("ERROR: %s\n", strerror(errno));
     exit(2);
@@ -234,88 +235,88 @@ int main(int argc, char**argv){
   
   msg_to_server->clientID = global_clientID;
 
+
   /************************* DISPLAY BOARD **********************************/
-  while(global_continue_flag){
-    star_t * stars = init_stars();
-    color_t star_color = {0,0,0,255};
-    gui_draw_star(stars[0].x_position,
-                  stars[0].y_position,
-                  stars[0].radius,
-                  star_color);
-    gui_draw_star(stars[1].x_position,
-                  stars[1].y_position,
-                  stars[1].radius,
-                  star_color);
+while(global_continue_flag){
+  star_t * stars = init_stars();
+  color_t star_color = {0,0,0,255};
+  gui_draw_star(stars[0].x_position,
+                stars[0].y_position,
+                stars[0].radius,
+                star_color);
+  gui_draw_star(stars[1].x_position,
+                stars[1].y_position,
+                stars[1].radius,
+                star_color);
        
 
-    /************************ HANDLE USER INPUT ****************************/
-    // use arrow keys to move and click to shoot
-    SDL_Event events;
-
+  /************************ HANDLE USER INPUT ****************************/
+  // use arrow keys to move and click to shoot
+  SDL_Event events;
     
-    /*========================= HANDLE CLICKS =============================*/
-    int mouse_x, mouse_y;
-    uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
-    if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
-      msg_to_server->cannonball_shot = true;
+  /*========================= HANDLE CLICKS =============================*/
+  int mouse_x, mouse_y;
+  uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
+  if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
+    printf("You clicked!\n");
+    msg_to_server->cannonball_shot = true;
       
-      // decide what direction we're shooting in
-      if(response->ship0_x_position > mouse_x){
-        // shoot left
-        msg_to_server->shoot_direction = LEFT;
-      }
-      else if(response->ship0_x_position < mouse_x){
-        // shoot right
-        msg_to_server->shoot_direction = RIGHT;
-      }
-    } // if the user clicked
+    // decide what direction we're shooting in
+    if(response->ship0_x_position > mouse_x){
+      // shoot left
+      msg_to_server->shoot_direction = LEFT;
+    }
+    else if(response->ship0_x_position < mouse_x){
+      // shoot right
+      msg_to_server->shoot_direction = RIGHT;
+    }
+  } // if the user clicked
       
-      /*========================= HANDLE ARROWKEYS ========================*/
-      // move ship
-      while(SDL_PollEvent(&events) == 1){
-        switch(events.type){
-        case SDLK_LEFT:
-          msg_to_server->ship_direction = LEFT;
-          msg_to_server->changed = true;
-          break;
-        case SDLK_RIGHT:
-          msg_to_server->changed = true;
-          msg_to_server->ship_direction = RIGHT;
-          break;
-        case SDLK_UP:
-          msg_to_server->changed = true;
-          msg_to_server->ship_direction = UP;
-          break;
-        case SDLK_DOWN:
-          msg_to_server->changed = true;
-          msg_to_server->ship_direction = DOWN;
-          break;
-        case SDLK_ESCAPE:
-          global_continue_flag = false;
-          msg_to_server->continue_flag = false;
-          break;
-        } // switch
-      } // while
-
+  /*========================= HANDLE ARROWKEYS ========================*/
+  // move ship
+  while(SDL_PollEvent(&events) == 1){
+    printf("You pressed a key!\n");
+    switch(events.type){
+    case SDLK_LEFT:
+      msg_to_server->ship_direction = LEFT;
+      msg_to_server->changed = true;
+      break;
+    case SDLK_RIGHT:
+      msg_to_server->changed = true;
+      msg_to_server->ship_direction = RIGHT;
+      break;
+    case SDLK_UP:
+      msg_to_server->changed = true;
+      msg_to_server->ship_direction = UP;
+      break;
+    case SDLK_DOWN:
+      msg_to_server->changed = true;
+      msg_to_server->ship_direction = DOWN;
+      break;
+    case SDLK_ESCAPE:
+      global_continue_flag = false;
+      msg_to_server->continue_flag = false;
+      break;
+    } // switch
       // SEND MESSAGE TO SERVER
-      if(msg_to_server->changed == true){
-        write(listen_socket, msg_to_server, sizeof(msg_to_server_t));
-      }
-    
+    if(msg_to_server->changed == true){
+      write(listen_socket, msg_to_server, sizeof(msg_to_server_t));
+    }    
    
     //Display the rendered image
     gui_update_display();
   }//while
+ } // while global_continue_flag
 
-  pthread_join(thread, NULL);
+pthread_join(thread, NULL);
   
-  // Free up space
-  //free(msg_to_server);
-  free(response);
-  //free(stars);
-  close(listen_socket);
+// Free up space
+//free(msg_to_server);
+free(response);
+//free(stars);
+close(listen_socket);
 
-  //Clean up the graphical interface
-  gui_shutdown();
+//Clean up the graphical interface
+gui_shutdown();
   
 } // main

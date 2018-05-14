@@ -60,6 +60,7 @@ void end_game ();
 
 /*************************** THREAD FUNCTIONS ******************************/
 void client_calculations(talk_to_client_args_t * client_info){
+  printf("client_calculations is running\n");
   // TODO: tell user if they've fired too many cannonballs??
   if(num_cannonballs < CANNONBALL_LIMIT){
     // call functions to handle information
@@ -87,6 +88,7 @@ void client_calculations(talk_to_client_args_t * client_info){
     // step 1: which client are we working with?
   int i = 0;
   while(clients[i].clientID != client_info->clientID);
+  printf("clients[i].clientID != client_info->clientID\n");
   // step 2: change the info in send_to_clients for the client you're
   //         working with
   if (i ==0){ // you're working with the first client
@@ -131,6 +133,7 @@ void * talk_to_client(void * args){
   //client_info->clientID = client_count;
   
   while(continue_flag){
+    //printf("talk_to_client looped\n");
     // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
       if(clients[i].socket == LOST_CONNECTION){
@@ -141,7 +144,7 @@ void * talk_to_client(void * args){
     // listen for information from client
     msg_to_server * response = (msg_to_server*)
       malloc(sizeof(msg_to_server_t));
-    // read(client_info->socket, response, sizeof(msg_to_server_t));
+    //read(client_info->socket, response, sizeof(msg_to_server_t));
 
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
@@ -259,6 +262,7 @@ int main() {
   /*====================== ACCEPT CLIENT CONNECTIONS ======================*/
   // Accept 2 connections
   while(client_count < 2) {
+    printf("Waiting for a client...\n");
     // Accept a client connection
     struct sockaddr_in client_addr;
     socklen_t client_addr_length = sizeof(struct sockaddr_in);

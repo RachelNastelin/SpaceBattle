@@ -296,14 +296,15 @@ int main() {
     new_client->clientID = client_count; // clientID
     strncpy(new_client->ip, ipstr, INET_ADDRSTRLEN); // IP
     new_client->port_num = message.listen_port; // port_num
-    // TODO: set socket? Do we need sockets?
+    new_client->socket = clients[client_count-1].socket;
     new_client->ship = init_spaceship(client_count); // ship
-
+    write(new_client->socket, new_client, sizeof(client_list_t));
+    
     // Put new client in clients array
     new_client->next = clients; 
     clients = new_client;
     client_count++;
-
+    free(new_client);
     
     /*============ SET UP COMMUNICATION WITH NEW CLIENT ==================*/ 
     // make new thread to communicate with client
@@ -319,7 +320,8 @@ int main() {
     
     // Thread talks to individual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
-    
+
+    free(args);
     // end game if necessary
     if (message.continue_flag == false) {
       printf("continue_flag = false\n");

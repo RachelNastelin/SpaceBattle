@@ -28,8 +28,10 @@
 #define RIGHT 2
 #define LEFT -2
 /******************************** STRUCTS **********************************/
-typedef struct user_input {
-  int direction; // LEFT, RIGHT, UP, or DOWN
+typedef struct user_input_args_t {
+  server_rsp_t * response;
+  msg_to_server_t * msg_to_server;
+  int listen_socket;
 } user_input_t;
 
 /****************************** GLOBALS ************************************/
@@ -53,20 +55,26 @@ int socket_setup (int port, struct sockaddr_in * addr);
 // thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
   printf("I'm in listen_relay_func\n");
-  int socket = *(int*)socket_num;
-  free(socket_num);
+  int socket = *(int*)(socket_num);
+  //free(socket_num);
   while (global_continue_flag) {
 
     printf("I'm gonna read a new message now.\n");
     server_rsp_t message;
     // try to read a message
-    
-    if (read(socket, &message, sizeof(server_rsp_t)) <= 0) {
-      // something went wrong, exit
-      printf("Client.cu read failed\n");
-      remove_connection(socket);
+    int num_tries = 0;
+    while (read(socket, &message, sizeof(server_rsp_t)) < 0) {
+      if(num_tries >= 10){
+        // something went wrong, exit
+        printf("Client.cu read failed\n");
+        remove_connection(socket);
+        break;
+      }
+      else{
+        num_tries++;
+      }
       
-    } else {
+    } 
 
 
       
@@ -85,23 +93,112 @@ void * listen_relay_func (void * socket_num) {
       // TODO: update your game board
       
     }
-  } // while true
+  printf("global_continue_flag is false\n");
   close(socket);
   return NULL;
 } // listen_relay_func
+
+
+void * user_input_func (void * args){
+  user_input_args_t user_input = *(user_input_args_t*)args;
+  
+  // use arrow keys to move and click to shoot
+  SDL_Event events;
+
+  while(global_continue_flag){
+    /*========================= HANDLE CLICKS =============================*/
+    int mouse_x, mouse_y;
+    uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
+    if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
+      printf("You clicked!\n");
+      user_input.msg_to_server->cannonball_shot = true;
+      
+      // decide what direction we're shooting in
+      if(user_input.response->ship0_x_position > mouse_x){
+        // shoot left
+        user_input.msg_to_server->shoot_direction = LEFT;
+      }
+      else if(user_input.response->ship0_x_position < mouse_x){
+        // shoot right
+        user_input.msg_to_server->shoot_direction = RIGHT;
+      }
+    } // if the user clicked
+      
+    /*========================= HANDLE ARROWKEYS ========================*/
+    // move ship
+    while(SDL_PollEvent(&events) == 1){
+      printf("You pressed a key!\n");
+      switch(events.type){
+      case SDLK_LEFT:
+        user_input.msg_to_server->ship_direction = LEFT;
+        user_input.msg_to_server->changed = true;
+        break;
+      case SDLK_RIGHT:
+        user_input.msg_to_server->changed = true;
+        user_input.msg_to_server->ship_direction = RIGHT;
+        break;
+      case SDLK_UP:
+        user_input.msg_to_server->changed = true;
+        user_input.msg_to_server->ship_direction = UP;
+        break;
+      case SDLK_DOWN:
+        user_input.msg_to_server->changed = true;
+        user_input.msg_to_server->ship_direction = DOWN;
+        break;
+      case SDLK_ESCAPE:
+        global_continue_flag = false;
+        user_input.msg_to_server->continue_flag = false;
+        break;
+      } // switch
+      // SEND MESSAGE TO SERVER
+      if(user_input.msg_to_server->changed == true){
+        write(user_input.listen_socket, user_input.msg_to_server, sizeof(msg_to_server_t));
+      }
+    }
+  } // while global_continue_flag
+  return NULL;
+}
+
+
+void * display_board_func(void* args){
+  star_t * stars = init_stars();
+  color_t star_color = {0,0,0,255};
+  
+  gui_draw_star(stars[0].x_position,
+                stars[0].y_position,
+                stars[0].radius,
+                star_color);
+  gui_draw_star(stars[1].x_position,
+                stars[1].y_position,
+                stars[1].radius,
+                star_color);
+  
+  while(global_continue_flag){
+    //gui_draw_ship(
+    
+    //Display the rendered image
+    gui_update_display();
+ 
+  } // while global_continue_flag
+  return NULL;
+}
 
 /*************************** HELPER FUNCTIONS ******************************/
 // remove a connection from our list
 // MAKE THIS END THE PROGRAM
 void remove_connection (int index) {
+  printf("remove_connection\n");
   pthread_mutex_lock(&connections_lock);
   connections[index] = LOST_CONNECTION;
   pthread_mutex_unlock(&connections_lock);
+  global_continue_flag = false;
+  exit(2);
 } // remove_connection
 
 
 // setup a socket to listen for connections (and spin off a listening thread)
 int setup_listen() {
+  printf("setup_listen\n");
   // set up child socket, which will be constantly listening for incoming
   //  connections
   struct sockaddr_in addr_listen;
@@ -139,14 +236,19 @@ int setup_listen() {
 
 // function to initialize server connection and receive a parent
 server_rsp_t * server_connect(msg_to_server_t * client_join) {
+  printf("Connecting to server...\n");
   // set up socket to connect to server
   struct sockaddr_in addr;
   int s = socket_setup(SERVER_PORT, &addr);
-
+  printf("a\t");
   // set up the server as passed into the command line
 
+  if(server_name == NULL){
+    printf("server_name is NULL\n");
+    exit(1);
+  }
   struct hostent* server = gethostbyname(server_name);
-
+  printf("b\t");
   if (server == NULL) {
     printf("server is null\n");
     fprintf(stderr, "Unable to find host %s\n", server_name);
@@ -155,6 +257,7 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
   // Specify the server's address
   bcopy((char*)server->h_addr, (char*)&addr.sin_addr.s_addr,
         server->h_length);
+  printf("c\t");
 
   // Connect to the server
   if(connect(s, (struct sockaddr*)&addr, sizeof(struct sockaddr_in))){
@@ -162,13 +265,14 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
     printf("ERROR: %s\n", strerror(errno));
     exit(2);
   } // if
+  printf("d\n");
 
   // send client join message (send the port that the client is listening on)
-  write(s, client_join, sizeof(server_rsp_t));
+  printf("write = %ld\n", write(s, client_join, sizeof(msg_to_server_t)));
 
   server_rsp_t * response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
-  read(s, response, sizeof(server_rsp_t));
-
+  while( read(s, response, sizeof(server_rsp_t)) == -1);
+   
   // return server's response
   return response;
 } // server_connect
@@ -235,88 +339,24 @@ int main(int argc, char**argv){
   
   msg_to_server->clientID = global_clientID;
 
+  /************************* HANDLE USER INPUT *****************************/
+  user_input_args_t args;
+  args.response = response;
+  args.msg_to_server = msg_to_server;
+  args.listen_socket = listen_socket;
+  pthread_t user_input;
+  pthread_create(&user_input, NULL, user_input_func, (void*)&args);
 
-  /************************* DISPLAY BOARD **********************************/
-while(global_continue_flag){
-  star_t * stars = init_stars();
-  color_t star_color = {0,0,0,255};
-  gui_draw_star(stars[0].x_position,
-                stars[0].y_position,
-                stars[0].radius,
-                star_color);
-  gui_draw_star(stars[1].x_position,
-                stars[1].y_position,
-                stars[1].radius,
-                star_color);
-       
-
-  /************************ HANDLE USER INPUT ****************************/
-  // use arrow keys to move and click to shoot
-  SDL_Event events;
-    
-  /*========================= HANDLE CLICKS =============================*/
-  int mouse_x, mouse_y;
-  uint32_t mouse_state = SDL_GetMouseState(&mouse_x, &mouse_y); 
-  if(mouse_state & SDL_BUTTON(SDL_BUTTON_LEFT)){
-    printf("You clicked!\n");
-    msg_to_server->cannonball_shot = true;
-      
-    // decide what direction we're shooting in
-    if(response->ship0_x_position > mouse_x){
-      // shoot left
-      msg_to_server->shoot_direction = LEFT;
-    }
-    else if(response->ship0_x_position < mouse_x){
-      // shoot right
-      msg_to_server->shoot_direction = RIGHT;
-    }
-  } // if the user clicked
-      
-  /*========================= HANDLE ARROWKEYS ========================*/
-  // move ship
-  while(SDL_PollEvent(&events) == 1){
-    printf("You pressed a key!\n");
-    switch(events.type){
-    case SDLK_LEFT:
-      msg_to_server->ship_direction = LEFT;
-      msg_to_server->changed = true;
-      break;
-    case SDLK_RIGHT:
-      msg_to_server->changed = true;
-      msg_to_server->ship_direction = RIGHT;
-      break;
-    case SDLK_UP:
-      msg_to_server->changed = true;
-      msg_to_server->ship_direction = UP;
-      break;
-    case SDLK_DOWN:
-      msg_to_server->changed = true;
-      msg_to_server->ship_direction = DOWN;
-      break;
-    case SDLK_ESCAPE:
-      global_continue_flag = false;
-      msg_to_server->continue_flag = false;
-      break;
-    } // switch
-      // SEND MESSAGE TO SERVER
-    if(msg_to_server->changed == true){
-      write(listen_socket, msg_to_server, sizeof(msg_to_server_t));
-    }    
-   
-    //Display the rendered image
-    gui_update_display();
-  }//while
- } // while global_continue_flag
-
-pthread_join(thread, NULL);
+ 
+  pthread_join(thread, NULL);
   
-// Free up space
-//free(msg_to_server);
-free(response);
-//free(stars);
-close(listen_socket);
+  // Free up space
+  //free(msg_to_server);
+  free(response);
+  //free(stars);
+  close(listen_socket);
 
-//Clean up the graphical interface
-gui_shutdown();
+  //Clean up the graphical interface
+  gui_shutdown();
   
 } // main

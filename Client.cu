@@ -18,7 +18,7 @@
 
 #include "driver.h"
 #include "board.h"
-#define SERVER_PORT 6680
+#define SERVER_PORT 6689
 
 #define NOT_IN_USE -1 // sockets not in use have this value
 #define LOST_CONNECTION -2 // clients that the server lost its connection with
@@ -53,11 +53,12 @@ int socket_setup (int port, struct sockaddr_in * addr);
 /***************************** THREAD FUNCTIONS ******************************/
  // thread to listen for and relay messages
 void * listen_relay_func (void * socket_num) {
+    printf("I'm in listen_relay_func\n");
   int socket = *(int*)socket_num;
   free(socket_num);
-
   while (global_continue_flag) {
-   
+
+    printf("I'm gonna read a new message now.\n");
     server_rsp_t message;
     // try to read a message
     
@@ -68,16 +69,19 @@ void * listen_relay_func (void * socket_num) {
       
     } else {
       // the information was sent successfully
+      /*
       global_continue_flag = message.continue_flag; // stops threads on client side
       gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
       gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
       gui_draw_cannonballs(700, 300);
+      */
+      printf("drawing!\n");
       color_t red = {0,255,0,0};
       gui_draw_star(200,200,50,red);
       // TODO: change other globals' values?
       gui_update_display();
       // TODO: update your game board
-      // Do we just call gui_update_display, or do we need to call individual functions
+      
     }
   } // while true
   close(socket);
@@ -157,7 +161,6 @@ server_rsp_t * server_connect(msg_to_server_t * client_join) {
   server_rsp_t * response = (server_rsp_t*)malloc(sizeof(server_rsp_t));
   read(s, response, sizeof(server_rsp_t));
 
-  close(s);
   // return server's response
   return response;
 } // server_connect
@@ -202,15 +205,17 @@ int main(int argc, char**argv){
   // set up child socket, which will be constantly listening for incoming
   //   connections
   int listen_socket = setup_listen();
-
   /************************* CONNECT TO SERVER ******************************/
   msg_to_server->clientID = global_clientID;
   msg_to_server->listen_port = global_listen_port; //updated in setup_listen
   msg_to_server->continue_flag = global_continue_flag;
+
+  ///// dies in next line
   server_rsp_t * response = server_connect(msg_to_server);
+ 
   pthread_t thread;
-  pthread_create(&thread, NULL, listen_relay_func, &listen_socket);
-  
+  printf("Creating a thread\n");
+  pthread_create(&thread, NULL, listen_relay_func, (void*)&listen_socket);
   // edit our globals to take into account information gotten from the server
   if(response->target_clientID == 0){
     global_clientID = response->clientID0;
@@ -245,11 +250,11 @@ int main(int argc, char**argv){
       msg_to_server->cannonball_shot = true;
       
       // decide what direction we're shooting in
-      if(response->ship0->x_position > mouse_x){
+      if(response->ship0_x_position > mouse_x){
         // shoot left
         msg_to_server->shoot_direction = LEFT;
       }
-      else if(response->ship0->x_position < mouse_x){
+      else if(response->ship0_x_position < mouse_x){
         // shoot right
         msg_to_server->shoot_direction = RIGHT;
       }

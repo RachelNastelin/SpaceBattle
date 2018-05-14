@@ -16,7 +16,7 @@
 #include "board.h"
 
 #define LOST_CONNECTION -2 //clients that the server lost its connection with
-#define SERVER_PORT 6680
+#define SERVER_PORT 6689
 // directions, used for user input
 #define NONE 0
 #define UP 1
@@ -98,8 +98,13 @@ void client_calculations(talk_to_client_args_t * client_info){
     send_to_clients->client_socket0 = clients[i].socket;
     send_to_clients->listen_port0 = clients[i].port_num;
     if(client_info->boosted){
-      send_to_clients->ship0 = update_spaceship(client_info->ship,
+      spaceship_t * ship0 = update_spaceship(client_info->ship,
                                                 client_info->ship_direction);
+      send_to_clients->ship0_x_position = ship0->x_position;
+      send_to_clients->ship0_y_position = ship0->y_position;
+      send_to_clients->ship0_x_velocity = ship0->x_velocity;
+      send_to_clients->ship0_y_velocity = ship0->y_velocity;
+
     } // if
     pthread_mutex_unlock(&send_to_clients_lock);
   } else if (i == 1){ // you're working with the second client
@@ -111,7 +116,12 @@ void client_calculations(talk_to_client_args_t * client_info){
     if(client_info->boosted){
       update_spaceship(client_info->ship, client_info->ship_direction);
     } // if
-    send_to_clients->ship0 = client_info->ship;
+    send_to_clients->ship0_x_position = client_info->ship->x_position;
+    send_to_clients->ship0_y_position = client_info->ship->y_position;
+    send_to_clients->ship0_x_velocity = client_info->ship->x_velocity;
+    send_to_clients->ship0_y_velocity = client_info->ship->y_velocity;
+
+        
     pthread_mutex_unlock(&send_to_clients_lock);
   }
 } // client_calculations 

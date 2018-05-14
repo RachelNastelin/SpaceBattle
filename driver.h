@@ -58,13 +58,21 @@ typedef struct server_rsp {
   int client_socket0;
   int clientID0;
   int listen_port0;
-  spaceship_t * ship0;
+  // ship information
+  float ship0_x_position;
+  float ship0_y_position;
+  float ship0_x_velocity;
+  float ship0_y_velocity;
   
   /* Client 1 */
   int client_socket1;
   int clientID1;
   int listen_port1;
-  spaceship_t * ship1;
+   // ship information
+  float ship1_x_position;
+  float ship1_y_position;
+  float ship1_x_velocity;
+  float ship1_y_velocity;
 
   /* Same for both clients  */
   cannonball_t * cannonballs; // array used for determining spaceship death

@@ -62,6 +62,7 @@ void end_game ();
 void client_calculations(talk_to_client_args_t * client_info){
   printf("client_calculations is running\n");
   // TODO: tell user if they've fired too many cannonballs??
+  /*
   if(num_cannonballs < CANNONBALL_LIMIT){
     // call functions to handle information
     if(client_info->cannonball_shot){
@@ -83,7 +84,7 @@ void client_calculations(talk_to_client_args_t * client_info){
 
   // handle existing cannonballs
   update_cannonballs(cannonballs, num_cannonballs);
-  
+  */
     // put information together with information about other client
     // step 1: which client are we working with?
   int i = 0;
@@ -93,9 +94,6 @@ void client_calculations(talk_to_client_args_t * client_info){
   //         working with
   if (i ==0){ // you're working with the first client
     pthread_mutex_lock(&send_to_clients_lock);
-    if(send_to_clients == NULL){
-      
-    }
     send_to_clients->clientID0 = clients[i].clientID;
     send_to_clients->client_socket0 = clients[i].socket;
     send_to_clients->listen_port0 = clients[i].port_num;
@@ -315,7 +313,6 @@ int main() {
     args->clientID = new_client->clientID;
     args->ship = clients[client_count - 1].ship;
     
-     // TODO: call this less often?
     //client_calculations(args);
     
     // Thread talks to individual client

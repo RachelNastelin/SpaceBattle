@@ -350,7 +350,7 @@ int main(int argc, char**argv){
   pthread_join(thread, NULL);
   
   // Free up space
-  //free(msg_to_server);
+  free(msg_to_server);
   free(response);
   //free(stars);
   close(listen_socket);

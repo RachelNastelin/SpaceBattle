@@ -75,7 +75,7 @@ typedef struct server_rsp {
   float ship1_y_velocity;
 
   /* Same for both clients  */
-  cannonball_t * cannonballs; // array used for determining spaceship death
+  cannonball_t cannonballs[100]; // array used for determining spaceship death
   bool continue_flag; // when false, stops all threads on client side
   int target_clientID;
   int num_changes; // keeps track of whether or not information should be sent

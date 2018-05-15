@@ -49,14 +49,6 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 
-// This isn't needed because cannonball size isn't random
-/*
-float drand(float min, float max) {
-  return ((float)rand() / RAND_MAX) * (max - min) + min;
-}
-*/
-
-
 /***************************** GLOBAL VARIABLES ****************************/
 // These variables should never be modified beyond their initialized values.
 star_t* stars;
@@ -118,7 +110,6 @@ __host__ void free_spaceship(spaceship_t* spaceship) {
 
 __host__ cannonball_t* init_cannonballs() {
   cannonball_t* cannonballs = (cannonball_t*) malloc(sizeof(cannonball_t));
-  // TODO: Initialize all cannonballs to NULL
   return cannonballs;
 }
 
@@ -204,12 +195,6 @@ __host__ cannonball_t* add_cannonball(spaceship_t* spaceship,
       break;
   }
 
-  /* This has been moved to func 'is_cannonball_in_bounds'
-  if (cannonball_x_pos > 0 &&
-      cannonball_x_pos <= SCREEN_WIDTH &&
-      cannonball_y_pos > 0 &&
-      cannonball_y_pos <= SCREEN_HEIGHT) {
-  */
 
   // Reallocate memory to make space for the new cannonball
   cannonballs = (cannonball_t*)

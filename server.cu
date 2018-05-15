@@ -61,8 +61,6 @@ void end_game ();
 /*************************** THREAD FUNCTIONS ******************************/
 void client_calculations(talk_to_client_args_t * client_info){
   printf("client_calculations is running\n");
-  // TODO: tell user if they've fired too many cannonballs??
-  /*
   if(num_cannonballs < CANNONBALL_LIMIT){
     // call functions to handle information
     if(client_info->cannonball_shot){
@@ -84,7 +82,7 @@ void client_calculations(talk_to_client_args_t * client_info){
 
   // handle existing cannonballs
   update_cannonballs(cannonballs, num_cannonballs);
-  */
+  
     // put information together with information about other client
     // step 1: which client are we working with?
   int i = 0;
@@ -131,7 +129,6 @@ void * talk_to_client(void * args){
   //client_info->clientID = client_count;
   
   while(continue_flag){
-    //printf("talk_to_client looped\n");
     // make sure that all the clients are still connected
     for(int i = 0; i < 2; i++){
       if(clients[i].socket == LOST_CONNECTION){
@@ -142,7 +139,6 @@ void * talk_to_client(void * args){
     // listen for information from client
     msg_to_server * response = (msg_to_server*)
       malloc(sizeof(msg_to_server_t));
-    //read(client_info->socket, response, sizeof(msg_to_server_t));
 
     if(send_to_clients->num_changes >= 2){
       // if both clients have given new input
@@ -173,7 +169,6 @@ void stop_game(){
     }
     write(clients[i].socket, &quit_msg, sizeof(server_rsp_t));
   } // for
-  //gui_shutdown();
   free(clients);
   free(send_to_clients);
   pthread_mutex_destroy(&send_to_clients_lock);
@@ -185,23 +180,18 @@ void stop_game(){
 
 // called when a client cannot be communicated with.
 void remove_client (int port) {
-  // TODO: change this to whatever print function we're using for the UI
   printf("Your opponent can't connect to the server.\n");
   stop_game();
 } // remove_client
 
 // called when a client quits before the game finishes
 void quit_client (int port){
-  // TODO: change this to whatever print function we're using for the UI
   printf("One player has quit the game.\n");
-  //server_rsp_t quit_msg;
   stop_game();
 } // quit_client
 
 // called when the game ends, which is when at least one player has died
 void end_game (){
-  // TODO: announce winner, call free_'...' functions
-  //server_rsp_t quit_msg;
   stop_game();
 } // end_game
 
@@ -312,9 +302,7 @@ int main() {
     args->socket = client_socket;
     args->clientID = new_client->clientID;
     args->ship = clients[client_count - 1].ship;
-    
-    //client_calculations(args);
-    
+        
     // Thread talks to individual client
     pthread_create(&new_client_thread, NULL, talk_to_client, (void *)(args));
 
@@ -336,5 +324,4 @@ int main() {
   printf("Both clients connected.\n");
   
   pthread_join(new_client_thread, NULL);
-  // TODO: close socket somewhere
 }

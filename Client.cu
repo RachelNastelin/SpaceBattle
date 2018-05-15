@@ -64,31 +64,25 @@ void * listen_relay_func (void * socket_num) {
     server_rsp_t message;
     // try to read a message
     read(socket, &message, sizeof(server_rsp_t));
-    /*while (read(socket, &message, sizeof(server_rsp_t)) < 0) {
-      if(num_tries >= 10){
+    if (read(socket, &message, sizeof(server_rsp_t)) < 0) {
         // something went wrong, exit
         printf("Client.cu read failed\n");
         remove_connection(socket);
         break;
-        }*/
-     
+        }
 
-
-      
       // the information was sent successfully
-      /*
+      
         global_continue_flag = message.continue_flag; 
         gui_draw_ship(message.ship0->x_position,message.ship0->y_position);
         gui_draw_ship(message.ship1->x_position,message.ship1->y_position);
         gui_draw_cannonballs(700, 300);
-      */
+      
       printf("drawing!\n");
       color_t red = {0,255,0,0};
       gui_draw_star(200,200,50,red);
       // TODO: change other globals' values?
-      gui_update_display();
-      // TODO: update your game board
-      
+      gui_update_display();      
     }
   printf("global_continue_flag is false\n");
   close(socket);
@@ -219,15 +213,9 @@ int setup_listen() {
   // save the port we're listening on
   global_listen_port = ntohs(addr_listen.sin_port);
 
-  // Spin up a thread to constantly listen for connections on this socket
-  //pthread_t accept_connections;
   int * listen_socket_num = (int*)malloc(sizeof(int));
   *listen_socket_num = listen_socket;
-  //if(pthread_create(&accept_connections, NULL, accept_connections_func,
-  //                  (void*)listen_socket_num)) {
-  //perror("pthread_create failed");
-  //exit(EXIT_FAILURE);
-  // }
+
   return listen_socket;
 } // setup_listen
 
@@ -306,10 +294,7 @@ int main(int argc, char**argv){
   } // for
 
   gui_init();
-  //star_t * stars = init_stars();
-  //color_t star_color = {0,0,0,255};
-  //gui_draw_star(stars[0].x_position, stars[0].y_position, stars[0].radius, star_color);
-  //gui_draw_star(stars[1].x_position, stars[1].y_position, stars[1].radius, star_color);
+  
 
   
   /******** SET UP PART TWO: PREPARE TO RECEIVE CLIENT JOIN REQUESTS *******/
